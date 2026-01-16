@@ -1,0 +1,64 @@
+<div class="tabla-scroll">
+    <table class="proyectos-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Nombre</th>
+                <th>Encargado</th>
+                <th>Monto</th>
+                <th>Calificación</th>
+                <th>Aprobaciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for p in proyectos %}
+            <tr class="fila-proyecto" data-id="{{ p.id }}">
+                <!-- ID -->
+                <td>{{ p.id }}</td>
+
+                <!-- Fecha (no existe aún en el modelo) -->
+                <td>
+                    {% if p.fecha_creacion %}
+                        {{ p.fecha_creacion|date:"d/m/Y" }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+                <!-- Nombre -->
+                <td>{{ p.nombre }}</td>
+
+                <!-- Encargado -->
+                <td>
+                    {{ p.encargado.get_full_name|default:p.encargado.username }}
+                </td>
+
+                <!-- Monto -->
+                <td>$ {{ p.monto }}</td>
+
+                <!-- Calificación -->
+                <td>
+                    {{ p.calificacion|floatformat }}
+                </td>
+
+                <!-- Aprobaciones del comité -->
+                <td>
+                    {% if p.total_comite > 0 %}
+                        {{ p.aprobados_comite }} de {{ p.total_comite }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="7" style="text-align:center;">
+                    No hay proyectos
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

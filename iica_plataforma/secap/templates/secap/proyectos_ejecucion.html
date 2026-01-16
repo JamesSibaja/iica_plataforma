@@ -1,0 +1,446 @@
+{% extends "generica.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+}
+
+.tabla-scroll {
+    max-height: calc(65vh - 0px);
+    overflow-y: auto;
+}
+
+.sidebar h3 {
+    color: var(--iica-azul);
+    font-weight: 800;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* ===== ITEMS ===== */
+.proyecto-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+
+.proyecto-item:hover {
+    background: rgba(79,163,209,.10);
+}
+
+.proyecto-active {
+    background: var(--iica-azul);
+    color: white;
+}
+
+.proyecto-nombre {
+    font-weight: 600;
+    font-size: .95rem;
+}
+
+/* ===== INDICADOR GENERAL ===== */
+.estado-general {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Escala */
+.estado-0 { background: var(--iica-verde); }
+.estado-1 { background: var(--iica-verde-lima); }
+.estado-2 { background: var(--iica-amarillo); }
+.estado-3 { background: var(--iica-naranja); }
+.estado-4 { background: var(--iica-rojo); }
+
+/* ===== TABS ===== */
+.nav-pills .nav-link {
+    font-weight: 600;
+    color: var(--iica-azul);
+}
+
+.nav-pills .nav-link.active {
+    background: var(--iica-azul);
+}
+
+
+:root {
+    --iica-azul: #00589C;
+    --iica-verde: #00a380;
+    --iica-verde-lima: #8db400;
+    --iica-amarillo: #fceb07;
+    --iica-naranja: #ff8d30;
+    --iica-rojo: #fd1b23;
+    --gris-fondo: #F4F4F4;
+    --gris-borde: #DDDDDD;
+}
+
+/* ===== CONTENEDOR GENERAL ===== */
+.main-container {
+    min-height: calc(100vh - 100px);
+    background: var(--gris-fondo);
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0,0,0,.15);
+}
+
+/* ===== SIDEBAR ===== */
+/* .sidebar {
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+}
+
+.sidebar h3 {
+    color: var(--iica-azul);
+    font-weight: 800;
+    margin-bottom: 18px;
+    text-align: center;
+} */
+/* Header fijo */
+.proyectos-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.proyecto-item {
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all .2s ease;
+}
+
+.semana-actual {
+    color: #ff8800;
+    font-weight: 700;
+    text-shadow: 0 0 0.5px currentColor;
+}
+
+
+.proyecto-item:hover {
+    background: rgba(79,163,209,.12);
+}
+
+.proyecto-active {
+    background: var(--iica-azul);
+    color: white;
+}
+
+/* ===== TITULO ===== */
+.titulo-proyecto {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--iica-azul);
+    margin-bottom: 25px;
+}
+
+/* ===== TABLA ===== */
+.tabla-indicadores {
+    width: 100%;
+    background: white;
+    border-radius: 14px;
+    border-collapse: collapse;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+}
+
+.tabla-indicadores thead {
+    background: var(--iica-azul);
+    color: white;
+}
+
+.tabla-indicadores th,
+.tabla-indicadores td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--gris-borde);
+}
+
+.tabla-indicadores th:first-child,
+.tabla-indicadores td:first-child {
+    text-align: left;
+    padding-left: 16px;
+}
+
+/* ===== FILAS ===== */
+.fila-indicador {
+    cursor: pointer;
+    transition: background .15s ease;
+}
+
+.fila-indicador:hover {
+    background: rgba(79,163,209,.08);
+}
+
+/* ===== CELDAS DE ESTADO ===== */
+.celda {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin: auto;
+    /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.596); */
+    box-shadow: 0 0px 4px rgba(0, 0, 0, 0.596);
+
+    box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.74);
+}
+
+.celda.actual {
+    width: 30px;
+    height: 30px;    
+    border-radius: 50%;
+    box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.74);
+}
+
+.celda.futuro {
+    opacity: .75;
+    width: 15px;
+    height: 15px;
+    box-shadow: 0 0px 3px rgba(0, 0, 0, 0.596);
+}
+
+/* Escala de colores */
+.estado-0 { background: var(--iica-verde); }
+.estado-1 { background: var(--iica-verde-lima); }
+.estado-2 { background: var(--iica-amarillo); }
+.estado-3 { background: var(--iica-naranja); }
+.estado-4 { background: var(--iica-rojo); }
+
+/* ===== PANEL LATERAL ===== */
+.panel-lateral {
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    min-height: 300px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+}
+
+/* ===== BOTONES ===== */
+.btn-container {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-iica {
+    padding: 14px 26px;
+    border-radius: 10px;
+    font-size: 1.15rem;
+    font-weight: bold;
+    color: white;
+    border: none;
+    background: var(--iica-azul);
+}
+</style>
+<div class="franja_baja4"></div>
+<div class="main-container">
+
+    <div class="row g-4">
+
+     <!-- ================= SIDEBAR ================= -->
+        <div class="col-md-3">
+
+            <div class="sidebar">
+
+                <h3>Proyectos</h3>
+
+                <!-- ===== TABS ===== -->
+                <ul class="nav nav-pills nav-fill mb-3" id="tabs-proyectos" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if modo == 'cartera' %}active{% endif %}"
+                                id="tab-propios"
+                                data-bs-toggle="pill"
+                                data-bs-target="#panel-propios"
+                                type="button"
+                                role="tab">
+                            Mi cartera
+                        </button>
+                    </li>
+
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link  {% if modo == 'comite' %}active{% endif %}"
+                                id="tab-comite"
+                                data-bs-toggle="pill"
+                                data-bs-target="#panel-comite"
+                                type="button"
+                                role="tab">
+                            Comité
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- ===== CONTENIDO DE TABS ===== -->
+                <div class="tab-content tabla-scroll">
+
+                    <!-- ================= MI CARTERA ================= -->
+                    <div class="tab-pane fade {% if modo == 'cartera' %}show{% endif %} {% if modo == 'cartera' %}active{% endif %}"
+                        id="panel-propios"
+                        role="tabpanel">
+
+                        {% for p in proyectos_propios %}
+                        <div class="proyecto-item
+                                {% if proyecto_sel and proyecto_sel.id == p.id %}proyecto-active{% endif %}"
+                                onclick="location.href='{% url 'proyectos_ejecucion' p.id %}?modo=cartera'">
+                        
+                            <span class="estado-general estado-{{ p.estado_general }}"></span>
+                        
+                            <span class="nombre-proyecto">
+                                {{ p.proyecto.nombre }}
+                            </span>
+                        </div>
+                        
+                        {% empty %}
+                            <p class="text-muted text-center small mt-3">
+                                No tienes proyectos en ejecución
+                            </p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- ================= COMITÉ ================= -->
+                    <div class="tab-pane fade {% if modo == 'comite' %}show{% endif %} {% if modo == 'comite' %}active{% endif %}"
+                        id="panel-comite"
+                        role="tabpanel">
+
+                        {% for p in proyectos_comite %}
+                            <div class="proyecto-item
+                                {% if proyecto_sel and proyecto_sel.id == p.id %}proyecto-active{% endif %}"
+                                onclick="location.href='{% url 'proyectos_ejecucion' p.id %}?modo=comite'">
+
+                                <span class="estado-general estado-{{ p.estado_general }}"></span>
+                        
+                                <span class="nombre-proyecto">
+                                    {{ p.proyecto.nombre }}
+                                </span>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted text-center small mt-3">
+                                No participas en proyectos de comité
+                            </p>
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ================= CONTENIDO ================= -->
+        <div class="col-md-9 ">
+            
+
+
+
+            {% if proyecto_sel %}
+
+                <div class="titulo-proyecto">
+                    {{ proyecto_sel.proyecto.nombre }}
+                    {% if es_comite %}
+                        <span class="badge bg-light text-secondary border">
+                            Vista comité
+                        </span>
+                    {% elif es_encargado %}
+                        <span class="badge bg-light text-primary border">
+                            Responsable
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="row g-4">
+
+                    <!-- ===== MATRIZ ===== -->
+                    <div class="col-md-8 tabla-scroll">
+                        <table class="tabla-indicadores  ">
+                            <thead>
+                                <tr>
+                                    <th>Indicador</th>
+                                    {% for s in semanas %}
+                                        <th class="{% if s|date:'W' == hoy|date:'W' %}semana-actual{% endif %}">
+                                            {{ s|date:"d M" }}
+                                        </th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+
+                            <tbody class="tabla-scroll">
+                            {% for fila in tabla %}
+                                <tr class="fila-indicador"
+                                    data-id="{{ fila.indicador.id }}">
+
+                                    <td>
+                                        <strong>{{ fila.indicador.premisa }}</strong><br>
+                                        <small class="text-muted">
+                                            {{ fila.indicador.porcentaje_actual|floatformat:2 }} %
+                                        </small>
+                                    </td>
+
+                                    {% for celda in fila.semanas %}
+                                        <td>
+                                            <div class="celda
+                                                estado-{{ celda.estado }}
+                                                {% if celda.es_actual %}actual{% endif %}
+                                                {% if celda.es_futuro %}futuro{% endif %}">
+                                            </div>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- ===== PANEL ===== -->
+                    <div class="col-md-4 tabla-scroll">
+                        <div id="panel-indicador" class="panel-lateral text-muted">
+                            <p class="text-center">
+                                Selecciona un indicador para ver su detalle
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+            {% else %}
+                <div class="alert alert-secondary text-center">
+                    No hay proyectos en ejecución disponibles.
+                </div>
+            {% endif %}
+
+            <div class="btn-container">
+                <button class="btn-iica"
+                        onclick="location.href='{% url 'proyecto_menu' %}'">
+                    Volver al menú
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script>
+document.querySelectorAll(".fila-indicador").forEach(fila => {
+    fila.addEventListener("click", () => {
+        fetch(`/proyectos/indicador/${fila.dataset.id}/`)
+            .then(r => r.text())
+            .then(html => {
+                document.getElementById("panel-indicador").innerHTML = html;
+            });
+    });
+});
+</script>
+
+{% endblock %}

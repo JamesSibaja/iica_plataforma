@@ -1,0 +1,232 @@
+{% extends "generica.html" %}
+{% load static %}
+
+{% block content %}
+
+<header>
+    <style>
+
+        /* ===== HERO ===== */
+        .hero-index {
+            height: 345px;
+            background: linear-gradient(
+                        rgba(0, 38, 77, 0.55),
+                        rgba(0, 38, 77, 0.55)
+                      ),
+                      url("{% static 'hero_iica_index.jpg' %}") no-repeat center center;
+            background-size: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .hero-text h1 {
+            font-size: clamp(2.4em, 4vw, 3.4em);
+            margin-bottom: 0.2em;
+            font-weight: 700;
+        }
+
+        .hero-text p {
+            font-size: clamp(1.2em, 2vw, 1.8em);
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        /* ===== SECTIONS ===== */
+        .section {
+            margin: 70px 0;
+            text-align: center;
+        }
+
+        .section h2 {
+            font-size: 2.2em;
+            color: #00264d;
+            font-weight: 700;
+            margin-bottom: 0.5em;
+        }
+
+        .section p {
+            color: #444;
+            font-size: 1.25em;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #0e355f;
+        }
+
+        /* ===== BUTTONS ===== */
+        .cta-button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin-top: 25px;
+            font-size: 1.2em;
+            border-radius: 12px;
+            text-decoration: none;
+            border: 1px solid #0b1733;
+            color: #0b1733;
+            transition: 0.3s ease;
+        }
+
+        .cta-button:hover {
+            background-color: #00264d;
+            color: white;
+        }
+
+        /* ===== CAROUSEL ===== */
+        .carousel-container {
+            position: relative;
+            max-width: 100%;
+            height: 50vh;
+            overflow: hidden;
+            margin: 40px auto;
+            border-radius: 12px;
+        }
+
+        .carousel {
+            display: flex;
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .carousel img {
+            width: 100%;
+            height: 50vh;
+            object-fit: cover;
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.45);
+            color: white;
+            border: none;
+            font-size: 2.4em;
+            padding: 0 12px;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        .carousel-btn:hover {
+            background: rgba(0,0,0,0.7);
+        }
+
+        .carousel-btn.left { left: 15px; }
+        .carousel-btn.right { right: 15px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-index { height: 300px; }
+            .carousel-container { height: 240px; }
+            .carousel img { height: 240px; }
+        }
+
+    </style>
+</header>
+
+
+
+<!-- =================== HERO =================== -->
+<div class="hero-index">
+    <div class="hero-text">
+        <h1>Plataforma de Innovación y Apoyo – IICA Costa Rica</h1>
+        <p>
+            Herramientas digitales para fortalecer la gestión interna, la comunicación,
+            el trabajo colaborativo y la resolución oportuna de conflictos.
+        </p>
+    </div>
+</div>
+
+
+
+<div class="container" style="background-color:#f5f5f5; padding: 40px 0;">
+
+
+    <!-- =================== SECCIÓN 1 =================== -->
+    <div class="section">
+        <h2>Automatización y Mejoras para la Oficina</h2>
+        <p>
+            Esta plataforma integra soluciones creadas para facilitar el trabajo diario 
+            de la oficina IICA Costa Rica, impulsando mejores prácticas internas,
+            eficiencia operativa y una cultura de innovación.
+        </p>
+    </div>
+
+
+    <!-- =================== CARRUSEL =================== -->
+
+
+
+
+    <!-- =================== SECCIÓN 2 =================== -->
+    <div class="section">
+        <h2>SECAP – Gestión de Proyectos</h2>
+        <p>
+            Una herramienta para fortalecer el seguimiento y administración de los proyectos,
+            permitiendo una trazabilidad más clara, eficiente y alineada con los objetivos
+            institucionales.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>IICA Networking – Estrategia Comunicativa</h2>
+        <p>
+            Construye mensajes estratégicos, organiza iniciativas de visibilidad y mejora la
+            comunicación interna y externa de la oficina.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Hablemos a Tiempo – Gestión del Conflicto</h2>
+        <p>
+            Un espacio seguro para atender inquietudes, promover la convivencia y reforzar
+            las habilidades de comunicación asertiva dentro del equipo.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>IICA Colaborativa – Incentivos al Trabajo en Equipo</h2>
+        <p>
+            Mecanismos para reconocer la colaboración, promover el apoyo mutuo y fortalecer
+            la cultura organizacional.
+        </p>
+    </div>
+
+
+
+</div>
+
+
+<!-- =================== JS DE CARRUSEL =================== -->
+<script>
+    let slideIndex = 0;
+    showSlides();
+
+    function plusSlides(n) {
+        slideIndex += n;
+        showSlides();
+    }
+
+    function showSlides() {
+        let slides = document.querySelectorAll('.carousel img');
+        if (slideIndex >= slides.length) { slideIndex = 0; }
+        if (slideIndex < 0) { slideIndex = slides.length - 1; }
+
+        const offset = -slideIndex * 100;
+        document.querySelector('.carousel').style.transform = `translateX(${offset}%)`;
+
+        document.querySelector('.carousel').style.width = `${slides.length * 100}%`;
+        slides.forEach(slide => {
+            slide.style.width = `${100 / slides.length}%`;
+        });
+    }
+
+    setInterval(() => { plusSlides(1); }, 6000);
+</script>
+
+{% endblock %}

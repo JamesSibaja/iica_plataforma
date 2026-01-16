@@ -1,0 +1,178 @@
+<div class="panel-detalle">
+
+    <!-- ===== TÍTULO ===== -->
+    <h4 class="fw-bold text-primary mb-1">
+        {{ indicador.premisa }}
+    </h4>
+
+    {% if indicador.descripcion %}
+        <p class="text-muted small mb-3">
+            {{ indicador.descripcion }}
+        </p>
+    {% endif %}
+
+    <!-- ===== VALOR ACTUAL ===== -->
+    <div class="mb-4">
+
+        <div class="text-muted fw-semibold mb-1">
+            Avance del indicador
+        </div>
+    
+        <div class="d-flex align-items-end gap-2">
+            <div class="display-6 fw-bold
+            {% if indicador.porcentaje_actual >= 100 %}
+                text-success
+            {% elif indicador.porcentaje_actual >= 80 %}
+                text-warning
+            {% else %}
+                text-danger
+            {% endif %}
+        ">
+                {{ indicador.porcentaje_actual|floatformat:2 }}%
+            </div>
+    
+            <div class="text-muted mb-2">
+                ({{ indicador.valor_actual|floatformat:2 }} / {{ indicador.valor_maximo|floatformat:2 }})
+            </div>
+        </div>
+    
+    </div>
+    
+    <hr>
+    {% if es_encargado %}
+    <!-- ===== ACTUALIZAR AVANCE ===== -->
+    <h6 class="fw-semibold mb-2">
+        Actualizar avance
+    </h6>
+
+    <form method="post"
+          action="{% url 'indicador_actualizar' indicador.id %}"
+          class="mb-4">
+
+        {% csrf_token %}
+
+        <div class="input-group mb-2">
+            <input type="number"
+                   name="valor_actual"
+                   class="form-control form-control-lg text-end"
+                   min="0"
+                   max="{{indicador.valor_maximo}}"
+                   step="1"
+                   value="{{ indicador.valor_actual }}"
+                   required>
+
+                   <span class="input-group-text fw-semibold">
+                     {{ indicador.valor_maximo }}
+                </span>
+                
+        </div>
+
+        <div class="small text-muted mb-3">
+            Ingresa el valor real de avance del indicador.
+        </div>
+
+        <button type="submit"
+                class="btn btn-outline-primary fw-semibold w-100">
+            Guardar avance
+        </button>
+    </form>
+
+    <hr>
+    {% endif %}
+    <!-- ===== PLAN / METAS ===== -->
+    <h6 class="fw-semibold mb-3">
+        Metas comprometidas
+    </h6>
+
+    <ul class="list-group list-group-flush mb-4">
+        {% for meta in indicador.metas.all %}
+            <li class="list-group-item px-0 d-flex justify-content-between align-items-start">
+
+                <div>
+                    <strong>{{ meta.valor_objetivo }}%</strong>
+                    <span class="text-muted">
+                        para {{ meta.fecha|date:"d M Y" }}
+                    </span>
+
+                    {% if meta.comentario %}
+                        <div class="small text-muted mt-1">
+                            {{ meta.comentario }}
+                        </div>
+                    {% endif %}
+                </div>
+                {% if es_encargado %}
+                <!-- Eliminar -->
+                <form method="post"
+                    action="{% url 'meta_indicador_eliminar' meta.id %}"
+                    onsubmit="return confirm('¿Eliminar esta meta?');">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger">
+                        ✕
+                    </button>
+                </form>
+                {% endif%}
+            </li>
+        {% empty %}
+            <li class="list-group-item px-0 text-muted">
+                No hay metas definidas para este indicador.
+            </li>
+        {% endfor %}
+    </ul>
+
+    <hr>
+    {% if es_encargado %}
+    <!-- ===== NUEVA META ===== -->
+    <h6 class="fw-semibold mb-2">
+        Agregar nueva meta
+    </h6>
+
+    <form method="post"
+        action="{% url 'meta_indicador_crear' indicador.id %}">
+
+        {% csrf_token %}
+
+        <div class="row g-2 mb-2">
+            <div class="col-5">
+                <input type="date"
+                    name="fecha"
+                    class="form-control"
+                    required>
+            </div>
+
+            <div class="col-4">
+                <input type="number"
+                    name="valor_objetivo"
+                    class="form-control text-end"
+                    min="0"
+                    max="{{ indicador.valor_maximo }}"
+                    step="0.1"
+                    required>
+            </div>
+
+            <div class="col-3 d-grid">
+                <button class="btn btn-success">
+                    Añadir
+                </button>
+            </div>
+        </div>
+
+        <textarea name="comentario"
+                class="form-control form-control-sm"
+                rows="2"
+                placeholder="Comentario (opcional)"></textarea>
+    </form>
+
+    {% endif %}
+    <!-- ===== APOYO ===== -->
+    
+    <!-- <button class="btn btn-outline-warning fw-semibold w-100">
+        Solicitar apoyo
+    </button> -->
+    {% if es_encargado %}
+        <hr>
+        <button class="btn btn-outline-warning fw-semibold w-100">Solicitar apoyo</button>
+    {% elif es_comite %}
+        <button class="btn btn-outline-success fw-semibold w-100">Ofrecer apoyo</button>
+    {% endif %}
+
+</div>

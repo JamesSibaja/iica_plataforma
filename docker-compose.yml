@@ -1,0 +1,119 @@
+services:
+  db_vm:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: iica_plataforma_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: iicaPlat
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql
+    networks:
+      - mynetwork_vm
+
+  daphne_vm:
+    build:
+      context: .
+      dockerfile: Dockerfile.daphne
+      args:
+        MODE: ${MODE:-development}
+    volumes:
+      - ./iica_plataforma:/app
+    expose:
+      - "8089"
+    depends_on:
+      - db_vm
+      - redis_vm
+      - gunicorn_vm
+    networks:
+      - mynetwork_vm
+    links:
+      - redis_vm
+
+  gunicorn_vm:
+    build:
+      context: .
+      dockerfile: Dockerfile.gunicorn
+      args:
+        MODE: ${MODE:-development}
+    volumes:
+      - ./iica_plataforma:/app
+      - ./scripts:/app/scripts
+    expose:
+      - "8765"
+    depends_on:
+      - db_vm
+      - redis_vm
+    networks:
+      - mynetwork_vm
+
+  celery_vm:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+      args:
+        MODE: ${MODE:-development}
+    volumes:
+      - ./iica_plataforma:/app
+    depends_on:
+      - redis_vm 
+      - gunicorn_vm
+    env_file:
+      - .env
+    networks:
+      - mynetwork_vm
+
+  redis_vm:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    command: redis-server --bind 0.0.0.0
+    networks:
+      - mynetwork_vm
+
+  documentation_vm:
+    build:
+      context: .
+      dockerfile: Dockerfile.docs
+    volumes:
+      - .:/app
+    command: make -C docs html
+    networks:
+      - mynetwork_vm
+
+  nginx_vm:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./letsencrypt/conf:/etc/letsencrypt
+      - ./iica_plataforma:/app
+      - ./letsencrypt/www:/var/www/certbot
+      - /etc/ssl/certs/dhparam.pem:/etc/ssl/certs/dhparam.pem
+    depends_on:
+      - daphne_vm
+      - gunicorn_vm
+    networks:
+      - mynetwork_vm
+
+  acme:
+    image: neilpang/acme.sh
+    environment:
+      - ACME_HOME=/acme.sh
+    volumes:
+      - ./letsencrypt/conf:/etc/letsencrypt
+      - ./letsencrypt/www:/var/www/certbot
+      - ./letsencrypt/acme.sh:/acme.sh
+      - /etc/ssl/certs/dhparam.pem:/etc/ssl/certs/dhparam.pem
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do sleep 6h & wait $${!}; ./acme.sh --cron; done'"
+
+networks:
+  mynetwork_vm:
+    driver: bridge
+
+volumes:
+  db_data:
+  letsencrypt:

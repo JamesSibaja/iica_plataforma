@@ -1,0 +1,44 @@
+# Utiliza una imagen base de Python para Django
+FROM python:3.10.12
+
+# Instala las dependencias del sistema necesarias para lxml
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    fonts-freefont-ttf \
+    postgresql \
+    postgresql-contrib \
+    libopenslide0 \
+    libopenslide-dev \
+    python3-openslide \
+    openslide-tools \
+    python3-dev \
+    build-essential \
+    nginx \
+    pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+# Establece el directorio de trabajo en /app
+WORKDIR /app
+
+# Copiar el resto de los archivos de la aplicación
+COPY ./iica_plataforma /app
+COPY requirements.txt /app/
+
+# Crear y activar el entorno virtual, actualizar pip e instalar dependencias
+
+RUN /bin/bash -c "source /app/venv/bin/activate && pip install --upgrade pip && pip install -r /app/requirements.txt"
+
+# Configura las variables de entorno para Django
+ENV DJANGO_SETTINGS_MODULE=iica_plataforma.settings
+
+# Copia la configuración de Nginx
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Ejecuta collectstatic solo en producción
+ARG MODE=development
+RUN if [ "$MODE" = "production" ]; then \
+    /bin/bash -c "source venv/bin/activate && python manage.py collectstatic --noinput"; \
+    fi
+
+# Comando para iniciar el servidor Celery
+CMD ["/bin/bash", "-c", "source venv/bin/activate && celery -A iica_plataforma worker -l INFO"]

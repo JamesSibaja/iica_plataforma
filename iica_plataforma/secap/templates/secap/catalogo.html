@@ -1,0 +1,134 @@
+{% extends "generica.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+:root {
+    --azul-iica: #00589C;
+    --verde-iica: #78BE20;
+    --fondo: #f4f7fb;
+    --texto-suave: #5f6f82;
+}
+
+/* Fondo general */
+.body-iica {
+    min-height: calc(100vh - 140px);
+    background: var(--fondo);
+    padding: 60px 20px;
+}
+
+/* Cabecera */
+.header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.header h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--azul-iica);
+    margin-bottom: 10px;
+}
+
+
+.header p {
+    font-size: 1.1rem;
+    color: var(--texto-suave);
+}
+
+/* Contenedor tarjetas */
+.menu-container {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    flex-wrap: wrap;
+}
+
+/* Tarjetas */
+.card-menu {
+    width: 340px;
+    background: white;
+    border-radius: 26px;
+    padding: 35px 30px 40px;
+    text-align: center;
+    cursor: pointer;
+
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    transition: all .3s ease;
+}
+
+.card-menu:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 35px rgba(0,0,0,0.18);
+}
+
+/* Imagen */
+.card-menu img {
+    width: 130px;
+    height: auto;
+    margin-bottom: 25px;
+}
+
+/* Título tarjeta */
+.card-menu h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+/* Descripción */
+.card-menu p {
+    font-size: 1rem;
+    color: var(--texto-suave);
+}
+
+/* Variantes */
+.card-nuevo h3 {
+    color: var(--azul-iica);
+}
+
+.card-ejecucion h3 {
+    color: var(--verde-iica);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .card-menu {
+        width: 100%;
+        max-width: 360px;
+    }
+}
+</style>
+<div class="franja_baja4"></div>
+<div class="body-iica">
+
+    <div class="header">
+        <h2>Sitema Estratégico de Cartera de Proyectos SECAP</h2>
+        <p>Selecciona el área en la que deseas trabajar</p>
+    </div>
+
+    <div class="menu-container">
+
+        <!-- PROYECTOS NUEVOS -->
+        <div class="card-menu card-nuevo"
+             onclick="location.href='{% url 'proyectos_nuevos' %}'">
+            <img src="{% static 'img/proyecto_n.png' %}" alt="Proyectos nuevos" style="width: 200px; height: auto;">
+            <h3>Proyectos nuevos</h3>
+            <p>Evaluación y priorización de nuevas iniciativas</p>
+        </div>
+
+        <!-- PROYECTOS EN EJECUCIÓN -->
+        <div class="card-menu card-nuevo"
+             onclick="location.href='{% url 'proyectos_ejecucion' %}'">
+            <img src="{% static 'img/proyecto_e.png' %}" alt="Proyectos en ejecución" style="width:200px; height: auto;">
+            <h3>Proyectos en ejecución</h3>
+            <p>Seguimiento y control de proyectos activos</p>
+        </div>
+
+    </div>
+
+</div>
+
+
+{% endblock %}

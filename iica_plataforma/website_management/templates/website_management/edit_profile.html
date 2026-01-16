@@ -1,0 +1,42 @@
+<!-- se extiende la plantilla genérica-->
+{% extends "generica.html" %}
+{% block content %}
+
+  <div class="container" style="background-color:rgb(255, 255, 255,0);width:100%;height: 100%" >
+    <div class="separar"></div>  
+    <div style="overflow-y: scroll;padding:3%;box-shadow: 1px 1px 10px rgb(100, 99, 99); background-color:rgb(255, 255, 255);border-radius:10px;position: relative;top:10%; height: 80%;left:20% ;width: 60%;">
+   <div style="position: relative; width: 100%;height: 80%;">
+    <h2 style="text-align: center;">{{user.username}}</h2>
+    <hr>
+    <form style="position: relative;top:10%;height: 100%;" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ user_form.as_p }}
+        <p><a style="text-decoration: underline;color: #0056b3;cursor: pointer;" onclick="location.href='{% url 'password' %}'">Cambiar contraseña</a></p>
+      <input type="file" name="profile_image" id="profile-image-input" accept="image/*">
+      <div style="padding: 2%;position: relative;float:left;padding-top: 5%;width: 100%;">
+            <button class="btn btn-primary btn-block js-tooltip" type="submit">Guardar</button>
+      
+      <button class="btn btn-danger btn-block js-tooltip" onclick="location.href='{% url 'project-list' %}'" >Cancelar</button>
+          </div>
+
+      </form>
+
+</div>
+
+
+</div>
+</div>
+{% endblock %}
+
+<!-- edit_profile.html -->
+
+<!-- <form method="post">
+  {% csrf_token %}
+  {{ user_form.as_p }}
+  {{ password_form.as_p }}
+
+  <button type="submit">Guardar cambios</button>
+</form> -->
+
+
+

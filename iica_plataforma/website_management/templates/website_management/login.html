@@ -1,0 +1,29 @@
+<!-- se extiende la plantilla genérica-->
+{% extends "generica.html" %}
+{% block content %}
+<div class="container" style="background-color:rgba(42, 96, 184, 0);width:100%;height: 100%;" >
+    <div class="separar"></div>  
+    <div style="padding:3%;box-shadow: 1px 1px 10px rgb(100, 99, 99); background-color:rgb(42, 96, 184);border-radius:10px;position: relative;bottom:20%;margin:auto; width: 50%;min-width: 350px;">
+   <div style="position: relative; width: 100%;">
+   <form style="color: rgb(231, 230, 230)" method="POST" >
+                
+    
+            {{ form.as_p }}
+            {% csrf_token %}
+            
+       <div style="padding: 2%;position: relative;">
+        <button class="btn btn-primary btn-block js-tooltip" type="submit">Entrar</button>
+      </div>
+        <div style="padding: 2%;position: relative;">
+    
+        
+    
+    </div>
+    </form>
+    <button class="btn btn-success btn-block js-tooltip" onclick="location.href='{% url 'SignUp' %}'" type="submit">Crear cuenta</button>
+</div>
+
+
+</div>
+</div>
+{% endblock %}

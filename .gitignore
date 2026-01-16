@@ -1,0 +1,36 @@
+iica_plataforma/media/archivo/*
+iica_plataforma/media/slides/*
+iica_plataforma/media/profile_images/*
+letsencrypt/*
+**/migrations/*
+**/venv/*
+.env/
+
+!iica_plataforma/media/archivo/
+!iica_plataforma/media/slides/
+!**/__init__.py
+iica_plataforma/docs
+
+
+# Ignorar archivos y carpetas específicos
+**/__pycache__/*
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+*.log
+
+# Ignorar archivos generados por el sistema
+.DS_Store
+Thumbs.db
+
+
+# Ignora archivos generados automáticamente por el sistema operativo
+.DS_Store
+
+
+# Ignora archivos locales de configuración
+local_settings.py
+*/nginx.conf
+*/settings.py

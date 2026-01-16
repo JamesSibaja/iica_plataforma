@@ -1,0 +1,153 @@
+{% extends "generica.html" %}
+{% load static %}
+{% block content %}
+<style>
+    :root {
+        --iica-azul: #00589C;
+        --iica-azul-claro: #4FA3D1;
+        --iica-verde: #6EBE44;
+        --gris-fondo: #F4F4F4;
+        --gris-borde: #DDDDDD;
+    }
+
+    .main-container {
+        min-height: calc(100vh - 180px);
+        background: var(--gris-fondo);
+        padding: 50px 40px;
+        border-radius: 14px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .main-title {
+        text-align: center;
+        font-size: 2.4rem;
+        font-weight: 800;
+        color: var(--iica-azul);
+        margin-bottom: 30px;
+    }
+    .btn-iica {
+        padding: 14px 26px;
+        border-radius: 10px;
+        font-size: 1.15rem;
+        font-weight: bold;
+        color: white;
+        border: none;
+    }
+
+    .btn-volver {
+        background: var(--iica-azul);
+    }
+</style>
+<div class="franja_baja4"></div>
+<div class="main-container">
+
+    <h2 class="main-title">Crear nuevo proyecto</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- ================== DATOS PROYECTO ================== -->
+        <div class="card mb-4">
+            <div class="card-header fw-bold">1️⃣ Datos del proyecto</div>
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre del proyecto</label>
+                    <input type="text" name="nombre" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" class="form-control"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Monto</label>
+                    <input type="number" name="monto" class="form-control">
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================== CRITERIOS ================== -->
+        <div class="card mb-4">
+            <div class="card-header fw-bold">2️⃣ Criterios de evaluación</div>
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label class="form-label">Usar plantilla</label>
+                    <select name="grupo_criterios" class="form-select">
+                        <option value="">— Seleccionar grupo —</option>
+                        {% for grupo in grupos %}
+                            <option value="{{ grupo.id }}">{{ grupo.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">
+                        Seleccionar un grupo crea automáticamente los formularios
+                    </div>
+                </div>
+
+                <hr>
+
+                <h6 class="fw-bold">O agregar criterios manualmente</h6>
+
+                {% for criterio in criterios %}
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               name="criterios_manual"
+                               value="{{ criterio.id }}">
+                        <label class="form-check-label">
+                            <strong>{{ criterio.premisa }}</strong>
+                            <br>
+                            <small class="text-muted">{{ criterio.descripcion }}</small>
+                        </label>
+                    </div>
+                {% endfor %}
+
+                <div class="mt-3">
+                    <a href="{% url 'admin:secap_criterio_add' %}"
+                       target="_blank"
+                       class="btn btn-outline-secondary btn-sm">
+                        ➕ Crear nuevo criterio
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================== COMITÉ ================== -->
+        <div class="card mb-4">
+            <div class="card-header fw-bold">3️⃣ Comité asesor</div>
+            <div class="card-body">
+
+                {% for u in usuarios %}
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               name="comite"
+                               value="{{ u.id }}">
+                        <label class="form-check-label">
+                            {{ u.get_full_name|default:u.username }}
+                        </label>
+                    </div>
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <!-- ================== BOTÓN ================== -->
+        <div class="text-end">
+            <button type="button"
+                class="btn btn-lg btn-danger"
+                onclick="if(confirm('¿Deseas cancelar la creación del proyecto?')) location.href='{% url 'proyectos_nuevos' %}'">                
+                Cancelar
+            </button>
+            <button class="btn btn-success btn-lg">
+                Crear proyecto
+            </button>
+        </div>
+
+    </form>
+
+</div>
+{% endblock %}

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<!-- Plantilla IICA Costa Rica -->
+<html lang="es">
+<head>
+  {% load static %}
+  {% block title %}<title>IICA Costa Rica</title>{% endblock %}
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap -->
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css'%}" rel="stylesheet">
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600&display=swap" rel="stylesheet"> 
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700" rel="stylesheet">
+
+  <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+
+  <!-- Styles -->
+  <link href="{% static 'css/gestion.css'%}" rel="stylesheet">
+
+<style>
+    :root {
+        --iica-azul-oscuro: #003366;
+        --iica-azul-intermedio: #005B9A;
+        --iica-amarillo: #FDB813;
+        --iica-azul: #00589C;
+        --iica-azul-claro: #4FA3D1;
+        --iica-verde: #6EBE44;
+        --iica-rojo: #FF595E;
+        --gris-fondo: #F4F4F4;
+        --gris-borde: #DDDDDD;
+    }
+
+
+  body, html {
+      font-family: 'Raleway', sans-serif;
+      background: #F4F6F9;
+      margin: 0;
+      height: 100%;
+  }
+
+  /* NAVBAR IICA */
+  .navbar-iica {
+      background-color: var(--iica-azul-oscuro);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .nav-item {
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 20px;
+  }
+
+  .navbar-iica .nav-link {
+      color: #fff !important;
+      font-weight: 600;
+      padding-left: 20px;
+      padding-right: 20px;
+      font-size: 18px;
+  }
+
+  .navbar-iica .nav-link:hover {
+      color: var(--iica-amarillo) !important;
+  }
+
+  .navbar-brand img {
+      max-height: 70px;
+  }
+    .franja_baja1 {
+            height: 40px;
+            background: linear-gradient(
+                        rgba(0, 38, 77, 0.55),
+                        rgba(0, 38, 77, 0.55)
+                      ),
+                      url("{% static 'img/franja1.jpg' %}") no-repeat center center;
+            background-size: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #fff;
+            padding: 20px;
+        }
+    .franja_baja2 {
+        height: 50px;
+        background: linear-gradient(
+                    rgba(0, 38, 77, 0.55),
+                    rgba(0, 38, 77, 0.55)
+                    ),
+                    url("{% static 'img/franja2.jpg' %}") no-repeat center center;
+        background-size: cover;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #fff;
+        padding: 20px;
+    }
+    .franja_baja3 {
+        height: 50px;
+        background: linear-gradient(
+                    rgba(0, 38, 77, 0.55),
+                    rgba(0, 38, 77, 0.55)
+                    ),
+                    url("{% static 'img/franja3.jpg' %}") no-repeat center center;
+        background-size: cover;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #fff;
+    }
+    .franja_baja4 {
+        height: 10px;
+        background: linear-gradient(
+                    rgba(0, 38, 77, 0.55),
+                    rgba(0, 38, 77, 0.55)
+                    ),
+                    url("{% static 'img/franja1.jpg' %}") no-repeat center center;
+        background-size: cover;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #fff;
+    }
+  /* FOOTER IICA */
+  footer.iica-footer {
+      background-color: var(--iica-azul-oscuro);
+      color: white;
+      padding: 40px 0;
+      /* margin-top: 40px; */
+  }
+
+  footer a {
+      color: #ffffff;
+      text-decoration: none;
+  }
+
+  footer a:hover {
+      color: var(--iica-amarillo);
+  }
+
+  .footer-credits {
+      font-size: 12px;
+      text-align: center;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      margin-top: 20px;
+  }
+
+</style>
+
+</head>
+
+<body>
+
+<!-- NAVBAR NUEVO IICA -->
+<nav class="navbar navbar-expand-md navbar-dark navbar-iica sticky-top">
+  <div class="container">
+      <a class="navbar-brand" href="{% url 'Inicio' %}">
+          <img src="{% static 'img/liica.png' %}" alt="IICA Logo">
+      </a>
+
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#menuIICA">
+          <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="menuIICA">
+
+        <ul class="navbar-nav ms-auto text-center">    
+
+              <!-- <li class="nav-item">
+                  <a class="nav-link" href="{% url 'Inicio' %}">Inicio</a>
+              </li> -->
+
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'proyecto_menu' %}">SECAP</a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">IICA Coworking CR</a>
+                
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">IICA Colaborativa</a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">Hablemos a Tiempo</a>
+            </li>
+
+          </ul>
+      </div>
+  </div>
+</nav>
+
+
+<!-- CONTENIDO -->
+{% block content %}
+{% endblock %}
+
+
+<!-- FOOTER IICA -->
+<div class="franja_baja1"></div>
+<footer class="iica-footer">
+  <div class="container">
+      <div class="row">
+
+          <div class="col-md-4">
+              <h6><strong>IICA Costa Rica</strong></h6>
+              <hr style="border-color: rgba(255,255,255,0.2); width: 120px;">
+              <p>Instituto Interamericano de Cooperación para la Agricultura</p>
+              <p>Oficina Nacional de Costa Rica</p>
+              <p>San José, Costa Rica</p>
+          </div>
+
+          <div class="col-md-4">
+              <h6><strong>Enlaces</strong></h6>
+              <hr style="border-color: rgba(255,255,255,0.2); width: 120px;">
+              <p><a href="{}">SECAP</a></p>
+              <p><a href="{}">Hablemos a Tiempo</a></p>
+              <p><a href="{}">IICA Colaborativa</a></p>
+              <p><a href="{}">IICA Coworking CR</a></p>
+          </div>
+
+          <div class="col-md-4">
+              <h6><strong>Síganos</strong></h6>
+              <hr style="border-color: rgba(255,255,255,0.2); width: 120px;">
+              <a href="https://www.facebook.com/IICAoficial" target="_blank">
+                <img src="{% static 'img/facebook.png' %}" width="32">
+              </a>
+              <a href="https://www.youtube.com/user/IICAnoticias" target="_blank">
+                <img src="{% static 'img/youtube.png' %}" width="32" style="margin-left:10px;">
+              </a>
+          </div>
+
+      </div>
+
+      <div class="footer-credits">
+          © 2026 IICA Costa Rica – Todos los derechos reservados
+      </div>
+  </div>
+</footer>
+
+
+</body>
+</html>

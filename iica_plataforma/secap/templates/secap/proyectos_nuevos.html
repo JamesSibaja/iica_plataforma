@@ -1,0 +1,247 @@
+{% extends "generica.html" %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+<style>
+:root {
+    --iica-azul: #00589C;
+    --iica-azul-claro: #4FA3D1;
+    --iica-verde: #198754;
+    --gris-fondo: #F4F4F4;
+    --gris-borde: #DDDDDD;
+}
+
+.main-container {
+    min-height: calc(100vh - 100px);
+    background: var(--gris-fondo);
+    padding: 50px 40px;
+    border-radius: 14px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.main-title {
+    text-align: center;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--iica-azul);
+    margin-bottom: 15px;
+}
+
+.tabla-scroll {
+    max-height: 57vh;
+    overflow-y: auto;
+    border-radius: 12px;
+}
+
+/* Tabla base */
+.proyectos-table {
+    width: 100%;
+    border-collapse: separate; /* MUY IMPORTANTE */
+    border-spacing: 0;
+    background: white;
+    font-size: 1.05rem;
+}
+
+/* Header fijo */
+.proyectos-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--iica-azul);
+    color: white;
+    z-index: 2;
+}
+
+/* Celdas */
+.proyectos-table th,
+.proyectos-table td {
+    padding: 14px 18px;
+    text-align: center;
+    border-bottom: 1px solid var(--gris-borde);
+}
+
+/* Hover */
+.proyectos-table tbody tr:hover {
+    background: rgba(79, 163, 209, 0.08);
+    cursor: pointer;
+}
+
+.fila-proyecto.seleccionada {
+    background: rgba(0, 88, 156, 0.12);
+    box-shadow: inset 4px 0 0 var(--iica-azul);
+    font-weight: 600;
+}
+
+.fila-proyecto.seleccionada td {
+    color: var(--iica-azul);
+}
+
+
+.flex-column {
+    max-height: 56vh; /* ajusta según header/footer */
+}
+
+.panel-header {
+    flex-shrink: 0;
+}
+
+.panel-header h4 {
+    margin: 0;
+    font-weight: 700;
+    padding-left: 30px;
+    font-size: 1.7rem;
+    color: var(--iica-azul);
+    line-height: 1.7;
+}
+.texto-descripcion {
+    max-width: 100%;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.5;
+}
+/* .panel-header p {
+    margin: 6px 0 0;
+    font-size: 0.95rem;
+    color: #6c757d;
+} */
+
+.panel-scroll {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+/* TABS */
+.nav-tabs .nav-link {
+    font-weight: bold;
+    color: var(--iica-azul);
+}
+
+.nav-tabs .nav-link.active {
+    background-color: var(--iica-azul);
+    color: white;
+}
+
+/* BOTONES */
+.btn-container {
+    margin-top: 35px;
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+}
+
+.btn-iica {
+    padding: 14px 26px;
+    border-radius: 10px;
+    font-size: 1.15rem;
+    font-weight: bold;
+    color: white;
+    border: none;
+}
+
+.btn-volver {
+    background: var(--iica-azul);
+}
+
+.btn-crear {
+    background: var(--iica-verde);
+}
+</style>
+<div class="franja_baja4"></div>
+<div class="main-container">
+
+    <h3 class="main-title">Cartera de Proyectos nuevos</h3>
+
+    <!-- ================== PESTAÑAS ================== -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cartera">
+                Mi cartera ({{ mi_cartera.count }})
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#comite">
+                Comité ({{ comite.count }})
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#otros">
+                Otros ({{ otros.count }})
+            </button>
+        </li>
+    </ul>
+
+    <div class="row">
+
+        <!-- ================== IZQUIERDA: TABLAS ================== -->
+        <div class="col-md-7 tab-content">
+
+            <div class="tab-pane fade show active" id="cartera">
+                {% include "secap/partials/tabla_proyectos.html" with proyectos=mi_cartera %}
+            </div>
+
+            <div class="tab-pane fade" id="comite">
+                {% include "secap/partials/tabla_proyectos.html" with proyectos=comite %}
+            </div>
+
+            <div class="tab-pane fade" id="otros">
+                {% include "secap/partials/tabla_proyectos.html" with proyectos=otros %}
+            </div>
+
+        </div>
+
+        <!-- ================== DERECHA: PANEL ÚNICO ================== -->
+        <div class="col-md-5">
+            <div id="panel-detalle" class="text-muted" style="max-height: 57vh;">
+                <p>Selecciona un proyecto para ver su información</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================== BOTONES ================== -->
+    <div class="btn-container">
+        <button class="btn-iica btn-volver"
+                onclick="location.href='{% url 'proyecto_menu' %}'">
+            Volver al menú
+        </button>
+
+        <button class="btn-iica btn-crear"
+                onclick="location.href='{% url 'proyecto_crear' %}'">
+            Crear proyecto
+        </button>
+
+    </div>
+
+</div>
+
+<!-- ================== JS CORRECTO ================== -->
+<script>
+    document.addEventListener("click", function (e) {
+    
+        const fila = e.target.closest(".fila-proyecto");
+        if (!fila) return;
+    
+        const proyectoId = fila.dataset.id;
+    
+        // 1 Limpiar selección previa
+        document.querySelectorAll(".fila-proyecto.seleccionada")
+            .forEach(f => f.classList.remove("seleccionada"));
+    
+        // 2️ Marcar fila actual
+        fila.classList.add("seleccionada");
+    
+        // 3️ Cargar panel de detalle (URL CORRECTA)
+        fetch(`/proyectos/detalle/${proyectoId}/`)
+            .then(r => r.text())
+            .then(html => {
+                document.getElementById("panel-detalle").innerHTML = html;
+            });
+    });
+    </script>
+    
+{% endblock %}
