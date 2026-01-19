@@ -54,13 +54,8 @@ def generate_nginx_conf(mode, domain, with_ssl=False):
                 try_files $uri =404;
             }
 
-            location /static/microscope/ {
-                alias /app/microscope/static/microscope/;
-                try_files $uri $uri/ =404;
-            }
-
-             location /static/projects/ {
-                alias /app/projects/static/projects/;
+            location /static/secap/ {
+                alias /app/secap/static/secap/;
                 try_files $uri $uri/ =404;
             }
 

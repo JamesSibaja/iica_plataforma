@@ -42,10 +42,37 @@ stop:
 	docker compose down
 
 clean:
-	sudo docker system prune -a
-	docker compose down
+	@echo "Limpieza total del entorno (Docker + Django)..."
+	@echo "-----------------------------------------------"
+
+	# Detener y borrar contenedores, redes y volúmenes
+	sudo docker compose down -v --remove-orphans
+
+	# Borrar imágenes, volúmenes, redes y caché
+	sudo docker system prune -a --volumes -f
+
+	# Borrar migrations (excepto __init__.py)
+	find . -path "*/migrations/*.py" ! -name "__init__.py" -delete
+	find . -path "*/migrations/*.pyc" -delete
+	find . -path "*/migrations/__pycache__" -type d -exec rm -rf {} +
+
+	# Borrar archivos de base de datos locales (si existieran)
+	find . -name "*.sqlite3" -delete
+
+	# Limpiar cachés de Python
+	find . -name "__pycache__" -type d -exec rm -rf {} +
+	find . -name "*.pyc" -delete
+	find . -name "*.pyo" -delete
+
+	# Limpiar estaticos
+	rm -rf staticfiles/
+	rm -rf media/
+
+	# Limpiar documentación generada
 	rm -rf docs/
-	sudo docker system prune -a
+
+	@echo "Limpieza completa finalizada."
+
 
 fix-docker-permissions:
 	@sudo usermod -aG docker $$(whoami)

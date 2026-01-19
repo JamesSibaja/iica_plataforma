@@ -2,7 +2,7 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SECRET_KEY = 'frVgK+y19SIYWrWJqKV7KA//Dp8ScAgyLFB3K9DYH4c='
+SECRET_KEY = 'xqMZHzn00ei8kshBbzWWKC1Ao+IVj6iF/+7enAeLpso='
 
 DEBUG = True
 
@@ -13,11 +13,11 @@ INSTALLED_APPS = [
     'secap',
     'website_management',
     'django.contrib.admin',
+    'django.contrib.humanize',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.humanize',
     'django_extensions',
     'colorfield',
     'channels',
