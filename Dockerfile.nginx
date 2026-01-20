@@ -1,14 +1,8 @@
-# Usa una imagen base de nginx
-FROM nginx:latest
+FROM nginx:1.26-alpine
 
-# Copia la configuración de Nginx generada por el script en la ubicación adecuada
-# Elige la configuración basada en la variable de entorno `MODE`
-ARG MODE=local
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+# El archivo nginx.conf ya viene generado por setup.sh
+# y será montado por docker-compose, así que NO lo copiamos aquí
 
+EXPOSE 80 443
 
-# Exponer el puerto 80 (este puerto se mapeará en el docker-compose.yml)
-EXPOSE 80
-
-# Comando para ejecutar Nginx
 CMD ["nginx", "-g", "daemon off;"]

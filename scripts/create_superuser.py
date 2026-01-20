@@ -1,26 +1,29 @@
 import os
+import sys
 import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "virtual_microscope.settings")
+
+sys.path.append('/app/')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "iica_plataforma.settings")
 django.setup()
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
-# Obtener el correo electrónico proporcionado
-email = os.getenv("DJANGO_SUPERUSER_EMAIL", "admin@example.com")
+User = get_user_model()
 
-# Obtener la contraseña del superusuario desde la variable de entorno
-password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
+email = os.environ.get("DJANGO_SUPERUSER_EMAIL")
+password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
 
-# Definir el nombre de usuario del superusuario
-username = "admin"
+if not email or not password:
+    print("Email o password no definidos")
+    exit(1)
 
-# Verificar si ya existe un superusuario con el nombre de usuario dado
-if not User.objects.filter(username=username).exists():
-    # Crear un superusuario con el correo electrónico y la contraseña proporcionados
-    User.objects.create_superuser(username, email, password)
-    print('Superuser created successfully')
+if User.objects.filter(email=email).exists():
+    print(f"ℹSuperusuario ya existe: {email}")
 else:
-    print('Superuser already exists')
-
-
+    User.objects.create_superuser(
+        username="admin",
+        email=email,
+        password=password
+    )
+    print(f"Superusuario creado: {email}")

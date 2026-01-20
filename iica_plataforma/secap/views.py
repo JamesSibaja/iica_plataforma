@@ -202,7 +202,7 @@ def proyecto_menu(request):
     """Menú inicial con dos opciones: nuevos y en ejecución"""
     return render(request, "secap/catalogo.html")
 
-
+@login_required
 def proyectos_nuevos(request):
     user = request.user
     formularios = Formulario.objects
@@ -247,27 +247,6 @@ def proyectos_nuevos(request):
         "comite": comite,
         "otros": otros,
     })
-
-# def proyectos_ejecucion(request):
-#     """Página inicial de proyectos en ejecución (por ahora vacía)"""
-#     return render(request, "secap/proyectos_ejecucion.html")
-
-# @login_required
-# def detalle_proyecto(request, proyecto_id):
-#     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
-
-#     nuevo = getattr(proyecto, "nuevo", None)
-#     formularios = nuevo.formulario_set.select_related("criterio") if nuevo else []
-
-#     es_encargado = proyecto.encargado == request.user
-#     es_comite = proyecto.miembrocomite_set.filter(usuario=request.user).exists()
-
-#     return render(request, "secap/partials/panel_detalle_contenido.html", {
-#         "proyecto": proyecto,
-#         "formularios": formularios,
-#         "es_encargado": es_encargado,
-#         "es_comite": es_comite,
-#     })
 
 @login_required
 def proyecto_detalle_panel(request, proyecto_id):

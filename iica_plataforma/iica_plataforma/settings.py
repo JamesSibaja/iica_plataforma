@@ -1,32 +1,35 @@
 import os
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'xqMZHzn00ei8kshBbzWWKC1Ao+IVj6iF/+7enAeLpso='
-
+SECRET_KEY = "bcQLFDV0OHrJiTm7FEGQOAXuJ2tWy72mNyxJBFKocrch90TKyw15+OeaZeenACOZ"
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['http://localhost:80']
+CSRF_TRUSTED_ORIGINS = ['http://localhost']
+
+# Permite a Django detectar HTTPS detrás de Nginx
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Cookies seguras en producción
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 INSTALLED_APPS = [
-    'secap',
-    'website_management',
     'django.contrib.admin',
-    'django.contrib.humanize',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django_extensions',
-    'colorfield',
+    'django.contrib.humanize',
     'channels',
     'daphne',
-    'django.contrib.staticfiles',
     'django_celery_results',
+    'django.contrib.staticfiles',
+    'secap',
+    'website_management',
 ]
-
-ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -40,108 +43,58 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'iica_plataforma.urls'
 
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
+TEMPLATES = [{
+    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+    'DIRS': [],
+    'APP_DIRS': True,
+    'OPTIONS': {
+        'context_processors': [
+            'django.template.context_processors.debug',
+            'django.template.context_processors.request',
+            'django.contrib.auth.context_processors.auth',
+            'django.contrib.messages.context_processors.messages',
+        ],
     },
-]
+}]
 
+ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'iica_plataforma_db',
         'USER': 'postgres',
         'PASSWORD': 'iicaPlat',
         'HOST': 'db_vm',
         'PORT': '5432',
-        'OPTIONS': {
-            'options': '-c timezone=UTC',
-        },
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-LANGUAGE_CODE = 'es-eu'
+LANGUAGE_CODE = 'es'
 TIME_ZONE = 'UTC'
 USE_I18N = True
-USE_L10N = True
+USE_TZ = True
 
 STATIC_URL = '/static/'
 
 if DEBUG:
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'static'),
-        os.path.join(BASE_DIR, 'secap', 'static'),
-    ]
-    STATIC_ROOT = None
+    STATICFILES_DIRS = [BASE_DIR / 'static']
 else:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'static'), 
-    ]
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 CELERY_BROKER_URL = 'redis://redis_vm:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis_vm:6379/0'
-CELERY_CACHE_BACKEND = 'django-cache'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
-CELERY_ENABLE_UTC = True
-CELERY_TASK_TRACK_STARTED = True
 
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('redis_vm', 6379)],
-        },
-    },
+        'CONFIG': {'hosts': [('redis_vm', 6379)]},
+    }
 }
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'channels': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-    },
-}
+# Elimina warnings W042
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

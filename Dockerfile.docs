@@ -1,36 +1,34 @@
-# Dockerfile para el servicio de documentación
+FROM python:3.10.12-slim
 
-# Utiliza una imagen base de Python
-FROM python:3.10.12
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=iica_plataforma.settings
 
-# Definir el directorio de trabajo
 WORKDIR /app
 
-# Copiar solo los archivos necesarios para la generación de documentación
-# COPY ./iica_plataforma /app
-
-# Copiar solo los archivos necesarios para la generación de documentación
-COPY ./docs /app/docs
-COPY ./iica_plataforma/manage.py /app/manage.py
-COPY ./iica_plataforma/microscope /app/microscope
-COPY ./iica_plataforma/website_management /app/website_management
-COPY ./iica_plataforma/projects /app/projects
-
-# Instalar Sphinx y las dependencias específicas para la generación de documentación
-RUN pip install --no-cache-dir sphinx \
-    sphinx-rtd-theme 
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# Dependencias del sistema necesarias para Sphinx + LaTeX
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libxml2-dev \
+    libxslt1-dev \
     texlive-xetex \
     texlive-fonts-recommended \
     texlive-fonts-extra \
+    texlive-lang-spanish \
     latexmk \
-    libxml2-dev \
-    libxslt1-dev \
     fonts-texgyre \
-    texlive-lang-spanish && \
-    rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
-# Comando para generar la documentación
-CMD ["make", "-C", "/app", "html"]
+# Instalar dependencias Python del proyecto
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# Instalar Sphinx y temas
+RUN pip install sphinx sphinx-rtd-theme
+
+# Copiar proyecto completo (necesario para autodoc)
+COPY ./iica_plataforma /app/iica_plataforma
+COPY ./docs /app/docs
+
+# Comando para generar la documentación HTML
+CMD ["make", "-C", "/app/docs", "html"]

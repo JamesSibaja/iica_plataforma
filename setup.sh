@@ -1,67 +1,87 @@
 #!/bin/bash
+set -e
 
-# Preguntar por el modo de operación
+echo "========================================="
+echo " IICA Plataforma - Setup"
+echo "========================================="
+
+# -------------------------
+# INPUTS
+# -------------------------
 read -p "¿Modo producción? (s/n): " mode
-read -p "Ingresa tu dominio (deja vacío para configuración local): " domain
-read -p "Ingresa tu correo electrónico para el certificado SSL: " email
-read -s -p "Ingresa la contraseña del superusuario de Django: " password
+read -p "Ingresa tu dominio (vacío = localhost): " domain
+read -p "Ingresa tu correo electrónico para SSL: " email
+read -s -p "Ingresa la contraseña del superusuario Django: " password
 echo
 
-# Determinar el modo
-if [[ $mode == "s" || $mode == "S" ]]; then
+# -------------------------
+# MODE
+# -------------------------
+if [[ "$mode" == "s" || "$mode" == "S" ]]; then
     MODE="production"
     DEBUG=False
-    ALLOWED_HOSTS="['$domain']"
-    CSRF_TRUSTED_ORIGINS="['https://$domain']"
+    DOMAIN=${domain:? "En producción el dominio es obligatorio"}
+    ALLOWED_HOSTS="['$DOMAIN']"
+    CSRF_TRUSTED_ORIGINS="['https://$DOMAIN']"
 else
     MODE="development"
     DEBUG=True
+    DOMAIN="localhost"
     ALLOWED_HOSTS="['*']"
-    CSRF_TRUSTED_ORIGINS="['http://localhost:80']"
+    CSRF_TRUSTED_ORIGINS="['http://localhost']"
 fi
 
-# Establecer valores predeterminados
-DOMAIN=${domain:-localhost}
 EMAIL=${email:-admin@localhost}
-PASSWORD=$password
+PASSWORD=${password:? "La contraseña no puede estar vacía"}
 
-# Exportar la variable de entorno para Docker Compose
 export MODE
 
-# Generar SECRET_KEY
-SECRET_KEY=$(openssl rand -base64 32)
+echo "Modo: $MODE"
+echo "Dominio: $DOMAIN"
 
-# Escribir el archivo settings.py
-cat <<EOL > iica_plataforma/iica_plataforma/settings.py
+# -------------------------
+# SECRET KEY
+# -------------------------
+SECRET_KEY=$(openssl rand -base64 48)
+
+# -------------------------
+# DJANGO SETTINGS
+# -------------------------
+echo "Generando settings.py..."
+
+cat > iica_plataforma/iica_plataforma/settings.py <<EOL
 import os
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = '$SECRET_KEY'
-
+SECRET_KEY = "$SECRET_KEY"
 DEBUG = $DEBUG
 
 ALLOWED_HOSTS = $ALLOWED_HOSTS
 CSRF_TRUSTED_ORIGINS = $CSRF_TRUSTED_ORIGINS
 
+# Permite a Django detectar HTTPS detrás de Nginx
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Cookies seguras en producción
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
 INSTALLED_APPS = [
-    'secap',
-    'website_management',
     'django.contrib.admin',
-    'django.contrib.humanize',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django_extensions',
-    'colorfield',
+    'django.contrib.humanize',
     'channels',
     'daphne',
-    'django.contrib.staticfiles',
     'django_celery_results',
+    'django.contrib.staticfiles',
+    'secap',
+    'website_management',
 ]
-
-ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -75,189 +95,146 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'iica_plataforma.urls'
 
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
+TEMPLATES = [{
+    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+    'DIRS': [],
+    'APP_DIRS': True,
+    'OPTIONS': {
+        'context_processors': [
+            'django.template.context_processors.debug',
+            'django.template.context_processors.request',
+            'django.contrib.auth.context_processors.auth',
+            'django.contrib.messages.context_processors.messages',
+        ],
     },
-]
+}]
 
+ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'iica_plataforma_db',
         'USER': 'postgres',
         'PASSWORD': 'iicaPlat',
         'HOST': 'db_vm',
         'PORT': '5432',
-        'OPTIONS': {
-            'options': '-c timezone=UTC',
-        },
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-LANGUAGE_CODE = 'es-eu'
+LANGUAGE_CODE = 'es'
 TIME_ZONE = 'UTC'
 USE_I18N = True
-USE_L10N = True
+USE_TZ = True
 
 STATIC_URL = '/static/'
 
 if DEBUG:
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'static'),
-        os.path.join(BASE_DIR, 'secap', 'static'),
-    ]
-    STATIC_ROOT = None
+    STATICFILES_DIRS = [BASE_DIR / 'static']
 else:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'static'), 
-    ]
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 CELERY_BROKER_URL = 'redis://redis_vm:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis_vm:6379/0'
-CELERY_CACHE_BACKEND = 'django-cache'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
-CELERY_ENABLE_UTC = True
-CELERY_TASK_TRACK_STARTED = True
 
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('redis_vm', 6379)],
-        },
-    },
+        'CONFIG': {'hosts': [('redis_vm', 6379)]},
+    }
 }
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'channels': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-    },
-}
+# Elimina warnings W042
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 EOL
 
-# Configurar entorno virtual y dependencias
-if command -v python3 &>/dev/null; then
-    PYTHON_CMD=python3
-elif command -v python &>/dev/null; then
-    PYTHON_CMD=python
-else
-    echo "Python is not installed. Installing Python3..."
-    sudo apt-get update
-    sudo apt-get install -y python3
-    PYTHON_CMD=python3
-fi
 
-sudo $PYTHON_CMD -m venv iica_plataforma/venv
-source iica_plataforma/venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+# -------------------------
+# NGINX CONF
+# -------------------------
+echo "Generando configuración de Nginx..."
+python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN"
 
-# Generar configuración de Nginx
-sudo $PYTHON_CMD scripts/generate_nginx_conf.py $MODE $DOMAIN
-
-# Verificar configuración de Nginx
 if [[ ! -f nginx.conf ]]; then
-    echo "Error: Los archivos de configuración de Nginx no se generaron correctamente."
+    echo "ERROR: nginx.conf no generado"
     exit 1
 fi
 
-# Exportar la variable de modo para docker-compose
-export MODE=$MODE
-
-if [[ $MODE == "production" ]]; then
-    if [ ! -f /etc/ssl/certs/dhparam.pem ]; then
-        echo "### Generating dhparam.pem file ..."
+# -------------------------
+# SSL PREPARATION
+# -------------------------
+if [[ "$MODE" == "production" ]]; then
+    if [[ ! -f /etc/ssl/certs/dhparam.pem ]]; then
+        echo "Generando dhparam.pem..."
         sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
     fi
 fi
 
-# Instalar acme.sh si no está instalado
-if [ ! -d "$HOME/.acme.sh" ]; then
-  echo "### Instalando acme.sh ..."
-  curl https://get.acme.sh | sh
+# -------------------------
+# ACME.SH
+# -------------------------
+if [[ "$MODE" == "production" && ! -d "$HOME/.acme.sh" ]]; then
+    echo "Instalando acme.sh..."
+    curl https://get.acme.sh | sh
 fi
 
-# Cargar acme.sh en el PATH
-export PATH="$HOME/.acme.sh":$PATH
+export PATH="$HOME/.acme.sh:$PATH"
 
-# Construir imágenes Docker
-sudo docker compose build --build-arg MODE=$MODE redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
+# -------------------------
+# DOCKER BUILD
+# -------------------------
+echo "Construyendo imágenes Docker..."
+sudo docker compose build --build-arg MODE="$MODE"
 
-# Inicializar y configurar la base de datos PostgreSQL
-sudo docker compose up --no-build -d --no-recreate redis_vm db_vm gunicorn_vm daphne_vm celery_vm
-sudo docker compose exec gunicorn_vm python manage.py makemigrations
-sudo docker compose exec gunicorn_vm python manage.py migrate
+# -------------------------
+# DB + MIGRATIONS
+# -------------------------
+echo "Iniciando servicios base..."
+sudo docker compose up -d redis_vm db_vm gunicorn_vm
 
-if [[ $MODE == "production" ]]; then
-    sudo docker compose exec gunicorn_vm python manage.py collectstatic --noinput
+echo "Aplicando migraciones..."
+docker compose exec gunicorn_vm python manage.py makemigrations
+docker compose exec gunicorn_vm python manage.py migrate
+if [ "$$MODE" = "production" ]; then \
+    docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
 fi
 
-# Exportar las variables de entorno para el superusuario
-export DJANGO_SUPERUSER_EMAIL=$EMAIL
-export DJANGO_SUPERUSER_PASSWORD=$PASSWORD
 
-sudo docker exec -e DJANGO_SUPERUSER_EMAIL=$DJANGO_SUPERUSER_EMAIL -e DJANGO_SUPERUSER_PASSWORD=$DJANGO_SUPERUSER_PASSWORD $(sudo docker ps -q -f name=gunicorn_vm) python manage.py shell -c "exec(open('/app/scripts/create_superuser.py').read())"
+# sudo docker compose run --rm gunicorn_vm python manage.py migrate
 
-# Iniciar Nginx sin SSL
-sudo docker compose up --no-build -d --no-recreate nginx_vm
+# -------------------------
+# SUPERUSER
+# -------------------------
+echo "Creando superusuario..."
+sudo docker compose run --rm \
+  -e DJANGO_SUPERUSER_EMAIL="$EMAIL" \
+  -e DJANGO_SUPERUSER_PASSWORD="$PASSWORD" \
+  gunicorn_vm \
+  python scripts/create_superuser.py
 
-if [[ $MODE == "production" ]]; then
-    sudo ./init-letsencrypt.sh $DOMAIN $EMAIL
-    # Regenerar configuración de Nginx para SSL
-    sudo $PYTHON_CMD scripts/generate_nginx_conf.py $MODE $DOMAIN --with-ssl
+# -------------------------
+# SSL CERTS
+# -------------------------
+if [[ "$MODE" == "production" ]]; then
+    echo "Solicitando certificados SSL..."
+    sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL"
+    python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
 fi
 
-# Iniciar la aplicación
-sudo docker compose up --no-build -d --no-recreate redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
+# -------------------------
+# START ALL
+# -------------------------
+echo "Levantando aplicación completa..."
+sudo docker compose up -d
 
-# Recargar Nginx con la nueva configuración
-if [[ $MODE == "production" ]]; then
+if [[ "$MODE" == "production" ]]; then
     sudo docker compose exec nginx_vm nginx -s reload
 fi
+
+echo "========================================="
+echo " Setup finalizado correctamente "
+echo "========================================="
