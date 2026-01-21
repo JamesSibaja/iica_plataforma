@@ -26,11 +26,10 @@ fi
 # -------------------------
 # DEPENDENCIAS
 # -------------------------
-echo ">>> Instalando dependencias del sistema"
+echo ">>> Instalando dependencias"
 apt-get update -qq
 apt-get install -y curl cron
 
-# Asegurar que cron esté corriendo
 systemctl enable cron || true
 systemctl start cron || true
 
@@ -44,9 +43,9 @@ mkdir -p "$data_path_conf/live/$domains"
 # INSTALAR ACME.SH
 # -------------------------
 if [[ ! -f "$ACME_BIN" ]]; then
-  echo ">>> Instalando acme.sh"
-  mkdir -p "$ACME_HOME"
-  curl https://get.acme.sh | sh -s email="$email" home="$ACME_HOME"
+  echo ">>> Instalando acme.sh en $ACME_HOME"
+  export ACME_HOME="$ACME_HOME"
+  curl https://get.acme.sh | sh
 fi
 
 # -------------------------
@@ -74,4 +73,4 @@ echo ">>> Solicitando certificado para $domains"
   --fullchain-file "$data_path_conf/live/$domains/fullchain.pem" \
   --reloadcmd "docker compose exec nginx_vm nginx -s reload"
 
-echo "SSL configurado correctamente"
+echo "✅ SSL configurado correctamente"
