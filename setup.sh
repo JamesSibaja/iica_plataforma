@@ -224,7 +224,7 @@ sudo docker compose run --rm \
 # -------------------------
 if [[ "$MODE" == "production" ]]; then
     echo "Solicitando certificados SSL..."
-    sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL"
+    sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || echo "⚠️ SSL pendiente"
     python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
 fi
 
