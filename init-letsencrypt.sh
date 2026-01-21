@@ -1,70 +1,75 @@
 #!/bin/bash
+set -e
 
-# Define los parámetros de entrada
 domains=$1
 email=$2
-data_path_conf="./letsencrypt/conf"
+
+ACME_HOME="/opt/acme.sh"
+ACME_BIN="$ACME_HOME/acme.sh"
+
 data_path="./letsencrypt"
-staging=0 # Set to 1 if you're testing your setup to avoid hitting request limits
+data_path_conf="./letsencrypt/conf"
 
-# Verifica que el script se esté ejecutando con privilegios de superusuario
+# -------------------------
+# ROOT CHECK
+# -------------------------
 if [[ "$EUID" -ne 0 ]]; then
-  echo "Por favor, ejecuta el script con sudo."
+  echo "❌ Ejecuta este script con sudo"
   exit 1
 fi
 
-# Verifica si la carpeta existe y tiene permisos de escritura
-if [ ! -d "$data_path" ]; then
-  mkdir -p "$data_path"
-fi
-
-if [ ! -d "$data_path_conf" ]; then
-  mkdir -p "$data_path_conf"
-fi
-
-# Cargar acme.sh en el PATH
-export PATH="$HOME/.acme.sh":$PATH
-
-# Instalar acme.sh si no está instalado
-if [ ! -d "$HOME/.acme.sh" ]; then
-  echo "### Instalando acme.sh ..."
-  curl https://get.acme.sh | sh
-  source ~/.bashrc
-fi
-
-# Seleccionar ZeroSSL como el CA predeterminado
-$HOME/.acme.sh/acme.sh --set-default-ca --server https://acme.zerossl.com/v2/DV90
-
-# Crear directorio para los certificados del dominio
-mkdir -p $data_path/www
-mkdir -p $data_path_conf/live/$domains/
-
-# Obtener certificados
-echo "### Solicitando certificados para $domains ..."
-$HOME/.acme.sh/acme.sh --issue --webroot "$data_path/www" -d "$domains" --email "$email" --force --log
-
-# Verifica si el proceso de emisión fue exitoso
-if [ $? -ne 0 ]; then
-  echo "Error al solicitar certificados para $domains"
+if [[ -z "$domains" || -z "$email" ]]; then
+  echo "Uso: sudo ./init-letsencrypt.sh dominio correo"
   exit 1
 fi
 
-# Instalar certificados en las rutas correspondientes
-$HOME/.acme.sh/acme.sh --install-cert -d $domains \
-  --key-file $data_path_conf/live/$domains/privkey.pem \
-  --fullchain-file $data_path_conf/live/$domains/fullchain.pem
+# -------------------------
+# DEPENDENCIAS
+# -------------------------
+echo ">>> Verificando dependencias..."
+apt-get update -qq
+apt-get install -y curl cron
 
-# Verifica si el proceso de instalación fue exitoso
-if [ $? -ne 0 ]; then
-  echo "Error al instalar certificados para $domains"
-  exit 1
+# -------------------------
+# DIRECTORIOS
+# -------------------------
+mkdir -p "$data_path/www"
+mkdir -p "$data_path_conf/live/$domains"
+
+# -------------------------
+# INSTALAR ACME.SH
+# -------------------------
+if [[ ! -f "$ACME_BIN" ]]; then
+  echo ">>> Instalando acme.sh en $ACME_HOME"
+  mkdir -p "$ACME_HOME"
+  curl https://get.acme.sh | sh -s email="$email" home="$ACME_HOME"
 fi
 
-# Copiar certificados a la ubicación esperada por Nginx
-# echo "### Copiando certificados a la ubicación esperada por Nginx ..."
-# mkdir -p ./letsencrypt/conf/live/$domains
-# cp $data_path/live/$domains/privkey.pem ./letsencrypt/conf/live/$domains/privkey.pem
-# cp $data_path/live/$domains/fullchain.pem ./letsencrypt/conf/live/$domains/fullchain.pem
+# -------------------------
+# CONFIGURAR ACME.SH
+# -------------------------
+"$ACME_BIN" --set-default-ca --server zerossl
+"$ACME_BIN" --register-account -m "$email" --server zerossl || true
 
-echo "### Certificados instalados y Nginx recargado exitosamente"
+# -------------------------
+# OBTENER CERTIFICADOS
+# -------------------------
+echo ">>> Solicitando certificados para $domains"
 
+"$ACME_BIN" --issue \
+  --webroot "$data_path/www" \
+  -d "$domains" \
+  --keylength ec-256 \
+  --force
+
+# -------------------------
+# INSTALAR CERTIFICADOS
+# -------------------------
+echo ">>> Instalando certificados..."
+
+"$ACME_BIN" --install-cert -d "$domains" \
+  --key-file "$data_path_conf/live/$domains/privkey.pem" \
+  --fullchain-file "$data_path_conf/live/$domains/fullchain.pem" \
+  --reloadcmd "docker compose exec nginx_vm nginx -s reload"
+
+echo "✅ Certificados SSL instalados correctamente"
