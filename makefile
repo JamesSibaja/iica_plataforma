@@ -42,36 +42,58 @@ stop:
 	docker compose down
 
 clean:
-	@echo "Limpieza total del entorno (Docker + Django)..."
-	@echo "-----------------------------------------------"
+	@echo "==============================================="
+	@echo " LIMPIEZA TOTAL (Docker + Proyecto + SSL)"
+	@echo "==============================================="
 
-	# Detener y borrar contenedores, redes y volúmenes
-	sudo docker compose down -v --remove-orphans
+	@echo ">>> Deteniendo y eliminando contenedores..."
+	- sudo docker compose down -v --remove-orphans
 
-	# Borrar imágenes, volúmenes, redes y caché
-	sudo docker system prune -a --volumes -f
+	@echo ">>> Eliminando TODOS los recursos Docker..."
+	- sudo docker system prune -a --volumes -f
 
-	# Borrar migrations (excepto __init__.py)
-	find . -path "*/migrations/*.py" ! -name "__init__.py" -delete
-	find . -path "*/migrations/*.pyc" -delete
-	find . -path "*/migrations/__pycache__" -type d -exec rm -rf {} +
+	@echo ">>> Eliminando redes Docker huérfanas..."
+	- sudo docker network prune -f
 
-	# Borrar archivos de base de datos locales (si existieran)
-	find . -name "*.sqlite3" -delete
+	@echo ">>> Eliminando volúmenes Docker huérfanos..."
+	- sudo docker volume prune -f
 
-	# Limpiar cachés de Python
-	find . -name "__pycache__" -type d -exec rm -rf {} +
-	find . -name "*.pyc" -delete
-	find . -name "*.pyo" -delete
+	@echo ">>> Limpieza de migraciones Django..."
+	find . -path "*/migrations/*.py" ! -name "__init__.py" -delete || true
+	find . -path "*/migrations/*.pyc" -delete || true
+	find . -path "*/migrations/__pycache__" -type d -exec rm -rf {} + || true
 
-	# Limpiar estaticos
-	rm -rf staticfiles/
-	rm -rf media/
+	@echo ">>> Eliminando bases de datos locales..."
+	find . -name "*.sqlite3" -delete || true
 
-	# Limpiar documentación generada
-	rm -rf docs/
+	@echo ">>> Limpieza de caché Python..."
+	find . -name "__pycache__" -type d -exec rm -rf {} + || true
+	find . -name "*.pyc" -delete || true
+	find . -name "*.pyo" -delete || true
 
-	@echo "Limpieza completa finalizada."
+	@echo ">>> Eliminando estáticos y media..."
+	rm -rf staticfiles/ || true
+	rm -rf media/ || true
+
+	@echo ">>> Eliminando documentación generada..."
+	rm -rf docs/ || true
+
+	@echo ">>> Eliminando certificados Let's Encrypt locales..."
+	rm -rf letsencrypt/ || true
+
+	@echo ">>> Eliminando nginx.conf generado..."
+	rm -f nginx.conf || true
+
+	@echo ">>> Eliminando dhparam.pem si fue creado por el proyecto..."
+	if [ -f /etc/ssl/certs/dhparam.pem ]; then \
+		echo "   - Borrando /etc/ssl/certs/dhparam.pem"; \
+		sudo rm -f /etc/ssl/certs/dhparam.pem; \
+	fi
+
+	@echo "==============================================="
+	@echo " LIMPIEZA COMPLETA FINALIZADA ✅"
+	@echo "==============================================="
+
 
 
 fix-docker-permissions:
