@@ -14,7 +14,7 @@ data_path_conf="./letsencrypt/conf"
 # ROOT CHECK
 # -------------------------
 if [[ "$EUID" -ne 0 ]]; then
-  echo "❌ Ejecuta este script con sudo"
+  echo "❌ Ejecuta con sudo"
   exit 1
 fi
 
@@ -26,9 +26,13 @@ fi
 # -------------------------
 # DEPENDENCIAS
 # -------------------------
-echo ">>> Verificando dependencias..."
+echo ">>> Instalando dependencias del sistema"
 apt-get update -qq
 apt-get install -y curl cron
+
+# Asegurar que cron esté corriendo
+systemctl enable cron || true
+systemctl start cron || true
 
 # -------------------------
 # DIRECTORIOS
@@ -40,7 +44,7 @@ mkdir -p "$data_path_conf/live/$domains"
 # INSTALAR ACME.SH
 # -------------------------
 if [[ ! -f "$ACME_BIN" ]]; then
-  echo ">>> Instalando acme.sh en $ACME_HOME"
+  echo ">>> Instalando acme.sh"
   mkdir -p "$ACME_HOME"
   curl https://get.acme.sh | sh -s email="$email" home="$ACME_HOME"
 fi
@@ -52,9 +56,9 @@ fi
 "$ACME_BIN" --register-account -m "$email" --server zerossl || true
 
 # -------------------------
-# OBTENER CERTIFICADOS
+# EMITIR CERTIFICADO
 # -------------------------
-echo ">>> Solicitando certificados para $domains"
+echo ">>> Solicitando certificado para $domains"
 
 "$ACME_BIN" --issue \
   --webroot "$data_path/www" \
@@ -63,13 +67,11 @@ echo ">>> Solicitando certificados para $domains"
   --force
 
 # -------------------------
-# INSTALAR CERTIFICADOS
+# INSTALAR CERTIFICADO
 # -------------------------
-echo ">>> Instalando certificados..."
-
 "$ACME_BIN" --install-cert -d "$domains" \
   --key-file "$data_path_conf/live/$domains/privkey.pem" \
   --fullchain-file "$data_path_conf/live/$domains/fullchain.pem" \
   --reloadcmd "docker compose exec nginx_vm nginx -s reload"
 
-echo "✅ Certificados SSL instalados correctamente"
+echo "SSL configurado correctamente"

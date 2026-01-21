@@ -91,7 +91,7 @@ clean:
 	fi
 
 	@echo "==============================================="
-	@echo " LIMPIEZA COMPLETA FINALIZADA ✅"
+	@echo " LIMPIEZA COMPLETA FINALIZADA"
 	@echo "==============================================="
 
 
