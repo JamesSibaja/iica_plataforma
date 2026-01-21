@@ -167,12 +167,15 @@ fi
 # -------------------------
 # SSL PREPARATION
 # -------------------------
+
 if [[ "$MODE" == "production" ]]; then
     if [[ ! -f /etc/ssl/certs/dhparam.pem ]]; then
         echo "Generando dhparam.pem..."
+        sudo mkdir -p /etc/ssl/certs
         sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
     fi
 fi
+
 
 # -------------------------
 # ACME.SH
