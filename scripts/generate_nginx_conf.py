@@ -24,10 +24,13 @@ http {
     }
 """
 
+    # ======================
+    # DEVELOPMENT
+    # ======================
     if mode == 'development':
         conf += """
     server {
-        listen 0.0.0.0:80;
+        listen 80;
         server_name localhost;
 
         location / {
@@ -53,18 +56,18 @@ http {
             try_files $uri =404;
         }
 
-        location /static/secap/ {
-            alias /app/secap/static/secap/;
-            try_files $uri $uri/ =404;
-        }
-
         location /media/ {
             alias /app/media/;
         }
     }
 """
 
+    # ======================
+    # PRODUCTION
+    # ======================
     elif mode == 'production':
+
+        # --- HTTP SIEMPRE ACTIVO ---
         conf += f"""
     server {{
         listen 80;
@@ -75,23 +78,37 @@ http {
         }}
 
         location / {{
-            return 301 https://$host$request_uri;
+            proxy_pass http://django_app;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Connection "";
+            proxy_redirect off;
         }}
     }}
 """
 
-        if with_ssl:
+        cert_path = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
+        key_path = f"/etc/letsencrypt/live/{domain}/privkey.pem"
+
+        # --- SOLO CREAR SSL SI EL CERT EXISTE ---
+        if with_ssl and os.path.exists(cert_path) and os.path.exists(key_path):
+
             dhparam_path = '/etc/ssl/certs/dhparam.pem'
             if not os.path.exists(dhparam_path):
-                subprocess.run(['openssl', 'dhparam', '-out', dhparam_path, '2048'])
+                subprocess.run(
+                    ['openssl', 'dhparam', '-out', dhparam_path, '2048'],
+                    check=True
+                )
 
             conf += f"""
     server {{
         listen 443 ssl;
         server_name {domain};
 
-        ssl_certificate /etc/letsencrypt/live/{domain}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/{domain}/privkey.pem;
+        ssl_certificate {cert_path};
+        ssl_certificate_key {key_path};
 
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_prefer_server_ciphers on;
@@ -102,7 +119,7 @@ http {
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Proto https;
             proxy_set_header Connection "";
             proxy_redirect off;
         }}
@@ -129,6 +146,7 @@ http {
 
     with open('nginx.conf', 'w') as f:
         f.write(conf)
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
