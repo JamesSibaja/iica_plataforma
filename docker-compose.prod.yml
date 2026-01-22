@@ -1,0 +1,9 @@
+services:
+  nginx_vm:
+    volumes:
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media
+
+volumes:
+  static_volume:
+  media_volume:

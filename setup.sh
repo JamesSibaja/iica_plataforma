@@ -50,7 +50,6 @@ SECRET_KEY=$(openssl rand -base64 48)
 echo "Generando settings.py..."
 
 cat > iica_plataforma/iica_plataforma/settings.py <<EOL
-import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -61,10 +60,8 @@ DEBUG = $DEBUG
 ALLOWED_HOSTS = $ALLOWED_HOSTS
 CSRF_TRUSTED_ORIGINS = $CSRF_TRUSTED_ORIGINS
 
-# Permite a Django detectar HTTPS detrás de Nginx
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Cookies seguras en producción
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
@@ -129,11 +126,11 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-if DEBUG:
+STATICFILES_DIRS = []
+if DEBUG and (BASE_DIR / 'static').exists():
     STATICFILES_DIRS = [BASE_DIR / 'static']
-else:
-    STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -148,94 +145,69 @@ CHANNEL_LAYERS = {
     }
 }
 
-# Elimina warnings W042
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 EOL
 
-
 # -------------------------
-# NGINX CONF
+# NGINX CONF (SIN SSL)
 # -------------------------
-echo "Generando configuración de Nginx..."
+echo "Generando configuración inicial de Nginx..."
 python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN"
 
-if [[ ! -f nginx.conf ]]; then
-    echo "ERROR: nginx.conf no generado"
-    exit 1
+# -------------------------
+# DOCKER COMPOSE UP
+# -------------------------
+echo "Levantando contenedores..."
+
+if [ "$MODE" = "production" ]; then
+  docker compose \
+    -f docker-compose.yml \
+    -f docker-compose.prod.yml \
+    up -d --build
+else
+  docker compose up -d --build
 fi
 
 # -------------------------
-# SSL PREPARATION
+# MIGRATIONS + STATIC
 # -------------------------
-
-if [[ "$MODE" == "production" ]]; then
-    if [[ ! -f /etc/ssl/certs/dhparam.pem ]]; then
-        echo "Generando dhparam.pem..."
-        sudo mkdir -p /etc/ssl/certs
-        sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
-    fi
-fi
-
-
-# -------------------------
-# ACME.SH
-# -------------------------
-if [[ "$MODE" == "production" && ! -d "$HOME/.acme.sh" ]]; then
-    echo "Instalando acme.sh..."
-    curl https://get.acme.sh | sh
-fi
-
-export PATH="$HOME/.acme.sh:$PATH"
-
-# -------------------------
-# DOCKER BUILD
-# -------------------------
-echo "Construyendo imágenes Docker..."
-sudo docker compose build --build-arg MODE="$MODE"
-
-# -------------------------
-# DB + MIGRATIONS
-# -------------------------
-echo "Iniciando servicios base..."
-sudo docker compose up -d redis_vm db_vm gunicorn_vm
-
 echo "Aplicando migraciones..."
 docker compose exec gunicorn_vm python manage.py makemigrations
 docker compose exec gunicorn_vm python manage.py migrate
-if [ "$$MODE" = "production" ]; then \
-    docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
+
+if [ "$MODE" = "production" ]; then
+    echo "Recolectando archivos estáticos..."
+    docker compose exec gunicorn_vm python manage.py collectstatic --noinput
 fi
-
-
-# sudo docker compose run --rm gunicorn_vm python manage.py migrate
 
 # -------------------------
 # SUPERUSER
 # -------------------------
 echo "Creando superusuario..."
-sudo docker compose run --rm \
+docker compose run --rm \
   -e DJANGO_SUPERUSER_EMAIL="$EMAIL" \
   -e DJANGO_SUPERUSER_PASSWORD="$PASSWORD" \
   gunicorn_vm \
   python scripts/create_superuser.py
 
 # -------------------------
-# SSL CERTS
+# SSL (PRODUCCIÓN)
 # -------------------------
 if [[ "$MODE" == "production" ]]; then
+
+    if [[ ! -f /etc/ssl/certs/dhparam.pem ]]; then
+        echo "Generando dhparam.pem..."
+        sudo mkdir -p /etc/ssl/certs
+        sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
+    fi
+
     echo "Solicitando certificados SSL..."
     sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || echo "⚠️ SSL pendiente"
+
+    echo "Regenerando Nginx con SSL..."
     python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
-fi
 
-# -------------------------
-# START ALL
-# -------------------------
-echo "Levantando aplicación completa..."
-sudo docker compose up -d
-
-if [[ "$MODE" == "production" ]]; then
-    sudo docker compose exec nginx_vm nginx -s reload
+    docker compose restart nginx_vm
 fi
 
 echo "========================================="

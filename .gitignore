@@ -3,6 +3,7 @@ iica_plataforma/media/slides/*
 iica_plataforma/media/profile_images/*
 letsencrypt/*
 **/migrations/*
+**/staticfiles/*
 **/venv/*
 .env/
 
