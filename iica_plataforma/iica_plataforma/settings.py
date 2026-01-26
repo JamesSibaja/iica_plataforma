@@ -1,18 +1,15 @@
-import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "a6K6cPSXk2iB4RuCmlBlEk13+2SFVLiwsIamFzvQ5xJJPlKz5oi0Ik2e8K0lo9F/"
+SECRET_KEY = "pTh99J/5qWOXD6Bm7BTdww2GkASQy+XzQZ2sAVdYmbQyw41BZjXWixDAPheiyUQ7"
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = ['http://localhost']
 
-# Permite a Django detectar HTTPS detrás de Nginx
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Cookies seguras en producción
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
@@ -77,14 +74,11 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-
-STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STATICFILES_DIRS = []
 if DEBUG and (BASE_DIR / 'static').exists():
     STATICFILES_DIRS = [BASE_DIR / 'static']
-
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -99,5 +93,4 @@ CHANNEL_LAYERS = {
     }
 }
 
-# Elimina warnings W042
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

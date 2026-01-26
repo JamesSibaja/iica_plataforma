@@ -188,7 +188,7 @@ docker compose run --rm \
   -e DJANGO_SUPERUSER_EMAIL="$EMAIL" \
   -e DJANGO_SUPERUSER_PASSWORD="$PASSWORD" \
   gunicorn_vm \
-  python scripts/create_superuser.py
+  python /app/scripts/create_superuser.py
 
 # -------------------------
 # SSL (PRODUCCIÓN)

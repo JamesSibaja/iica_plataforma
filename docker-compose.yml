@@ -24,6 +24,7 @@ services:
         MODE: ${MODE:-development}
     volumes:
       - ./iica_plataforma:/app
+      - ./scripts:/app/scripts
     expose:
       - "8765"
     depends_on:
@@ -65,6 +66,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./letsencrypt/conf:/etc/letsencrypt
       - ./letsencrypt/www:/var/www/certbot
+      - ./iica_plataforma:/app
     depends_on:
       - gunicorn_vm
       - daphne_vm
