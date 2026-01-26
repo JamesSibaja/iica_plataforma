@@ -11,7 +11,7 @@ letsencrypt/*
 !iica_plataforma/media/slides/
 !**/__init__.py
 iica_plataforma/docs
-
+iica_plataforma/iica_plataforma/settings.py
 
 # Ignorar archivos y carpetas específicos
 **/__pycache__/*
