@@ -72,8 +72,8 @@ clean:
 	find . -name "*.pyo" -delete || true
 
 	@echo ">>> Eliminando estáticos y media..."
-	rm -rf staticfiles/ || true
-	rm -rf media/ || true
+	rm -rf iica_plataforma/staticfiles/*|| true
+	rm -rf iica_plataforma/media/profile_images/* || true
 
 	@echo ">>> Eliminando documentación generada..."
 	rm -rf docs/ || true
