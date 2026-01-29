@@ -1,34 +1,54 @@
-iica_plataforma/media/archivo/*
-letsencrypt/*
-**/migrations/*
-**/staticfiles/*
-**/venv/*
-.env/
-
-!iica_plataforma/media/archivo/
-!**/__init__.py
-iica_plataforma/docs
-iica_plataforma/iica_plataforma/settings.py
-
-# Ignorar archivos y carpetas específicos
-**/__pycache__/*
+# ======================
+# Django
+# ======================
 *.pyc
 *.pyo
 *.pyd
+__pycache__/
+*.sqlite3
 *.db
-*.sqlite
 *.log
 
-# Ignorar archivos generados por el sistema
+# ======================
+# Entornos virtuales
+# ======================
+venv/
+**/venv/
+
+# ======================
+# Variables sensibles
+# ======================
+.env
+local_settings.py
+
+# ======================
+# Media y static (generados)
+# ======================
+iica_plataforma/media/*
+iica_plataforma/staticfiles/*
+
+# Mantener estructura de carpetas
+!iica_plataforma/media/.gitkeep
+
+# ======================
+# Migraciones (opcional)
+# ======================
+**/migrations/*.py
+!**/migrations/__init__.py
+
+# ======================
+# Docker / Nginx
+# ======================
+letsencrypt/
+*/nginx.conf
+
+# ======================
+# Docs generados
+# ======================
+iica_plataforma/docs/
+
+# ======================
+# OS
+# ======================
 .DS_Store
 Thumbs.db
-
-
-# Ignora archivos generados automáticamente por el sistema operativo
-.DS_Store
-
-
-# Ignora archivos locales de configuración
-local_settings.py
-*/nginx.conf
-*/settings.py
