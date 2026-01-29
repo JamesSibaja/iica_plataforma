@@ -27,4 +27,5 @@ urlpatterns = [
     path("indicador/<int:indicador_id>/actualizar/", views.indicador_actualizar, name="indicador_actualizar"),
     path("indicador/<int:indicador_id>/meta/crear/", views.meta_indicador_crear, name="meta_indicador_crear"),
     path("meta/<int:meta_id>/eliminar/", views.meta_indicador_eliminar, name="meta_indicador_eliminar"),
+    path("proyectos/<int:proyecto_id>/indicadores/nuevo/", views.crear_indicador, name="crear_indicador"),
 ]

@@ -1,28 +1,96 @@
-<!-- se extiende la plantilla genérica-->
 {% extends "generica.html" %}
+{% load static %}
 {% block content %}
-<div class="container" style="background-color:rgba(255, 255, 255, 0);width:100%;height: auto;min-height: 100vh;padding-top: 0x;padding-bottom: 45px;" >
-    <!-- <div class="separar"></div>   -->
-    <div style="padding:3%;box-shadow: 1px 1px 10px rgb(100, 99, 99); background-color:rgb(89, 128, 112);border-radius:10px;margin-top: 0; margin:auto; width: 60%;min-width: 350px;">
-   <div style="position: relative; width: 100%;">
-   <form style ="color: rgb(231, 230, 230)" method="POST" >
-                
-    
-            {{ form.as_p }}
-            {% csrf_token %}
-            
-       <div style="padding: 2%;position: relative;">
-        <button class="btn btn-success btn-block js-tooltip" type="submit">Registrarte</button>
-      </div>
-        <div style="padding: 2%;position: relative;">
-    
-        <button  class="btn btn-primary btn-block js-tooltip" type="submit" onclick="location.href='{% url 'Login' %}'">Iniciar Sesión</button>
-    
+
+<style>
+    :root {
+        --iica-azul: #00589C;
+        --iica-verde: #447a27;
+        --gris-fondo: #F4F4F4;
+    }
+
+    .signup-container {
+        min-height: calc(100vh - 180px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gris-fondo);
+        padding: 40px 15px;
+    }
+
+    .signup-card {
+        width: 100%;
+        max-width: 480px;
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        background: white;
+        overflow: hidden;
+    }
+
+    .signup-header {
+        background: var(--iica-verde);
+        color: white;
+        text-align: center;
+        padding: 25px 20px;
+    }
+
+    .signup-header img {
+        max-height: 55px;
+        margin-bottom: 10px;
+    }
+
+    .signup-body {
+        padding: 30px;
+    }
+
+    .signup-body button {
+        width: 100%;
+    }
+
+    .signup-footer {
+        text-align: center;
+        padding: 20px;
+        background: #fafafa;
+        border-top: 1px solid #eee;
+    }
+</style>
+
+<div class="franja_baja4"></div>
+
+<div class="signup-container">
+
+    <div class="signup-card">
+
+        <!-- HEADER -->
+        <div class="signup-header">
+            <h5 class="fw-bold mb-0">Crear cuenta</h5>
+        </div>
+
+        <!-- BODY -->
+        <div class="signup-body">
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.as_p }}
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        Registrarme
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="signup-footer">
+            <p class="mb-2 text-muted">¿Ya tienes una cuenta?</p>
+            <button class="btn btn-outline-primary"
+                    onclick="location.href='{% url 'Login' %}'">
+                Iniciar sesión
+            </button>
+        </div>
+
     </div>
-    </form>
-</div>
-
 
 </div>
-</div>
+
 {% endblock %}

@@ -21,7 +21,7 @@ def home(request):
 class Login(FormView):
     template_name = "website_management/login.html"
     form_class = LoginForm
-    success_url = reverse_lazy('project-list')
+    success_url = reverse_lazy('Inicio')
 
     @method_decorator(csrf_protect)
     @method_decorator(never_cache)
@@ -48,36 +48,6 @@ class SignUp(generic.CreateView):
     def form_valid(self,form):
         return super(SignUp,self).form_valid(form)
 
-# class SignUp(generic.CreateView):
-#     template_name = "website_management/signup.html"
-#     form_class = CreateUserForm
-#     success_url = reverse_lazy('Login')
-
-#     def form_valid(self, form):
-#         response = super().form_valid(form)
-#         generate_ssh_keys(self.object)
-#         return response
-
-# def generate_ssh_keys(user):
-#     # Generar par de claves SSH
-#     key = paramiko.RSAKey.generate(2048)
-    
-#     # Almacenar la clave pública en la base de datos
-#     try:
-#         profile = user.userprofile
-#     except UserProfile.DoesNotExist:
-#         profile = UserProfile.objects.create(user=user)
-#     profile.ssh_public_key = key.get_base64()
-#     profile.save()
-    
-#     # Guardar la clave privada en el servidor
-#     private_key_path = f'/etc/ssh/keys/{user.username}_private.pem'
-#     os.makedirs('/etc/ssh/keys', exist_ok=True)  # Crear directorio si no existe
-#     with open(private_key_path, 'w') as private_key_file:
-#         key.write_private_key(private_key_file)
-
-    # return private_key_path
-
 @login_required
 def edit_profile(request):
     if request.method == 'POST':
@@ -91,7 +61,7 @@ def edit_profile(request):
             user_profile.save()
             user.save()
             # Agrega la lógica para guardar otros campos del UserProfile aquí
-            return redirect('/project/')
+            return redirect('/')
     else:
         user_form = CustomUserChangeForm(instance=request.user)
     
@@ -104,34 +74,9 @@ def edit_password(request):
         if password_form.is_valid():
             password_form.save()
             # Agrega la lógica para guardar otros campos del UserProfile aquí
-            return redirect('/project/')
+            return redirect('/')
     else:
         password_form = PasswordChangeForm(request.user)
     
     return render(request, 'website_management/password.html', {'password_form': password_form})
 
-# @login_required
-# def edit_profile(request):
-#     if request.method == 'POST':
-#         form = CustomUserChangeForm(request.POST, request.FILES, instance=request.user)
-#         if form.is_valid():
-#             user = form.save()
-#             user_profile = request.user.userprofile
-
-#             if 'profile_image' in request.FILES:
-#                 profile_image = request.FILES['profile_image']
-#                 user_profile.profile_image = profile_image
-
-#         # Puedes guardar otros campos del UserProfile aquí
-
-#             user_profile.save()
-#             # new_password = form.cleaned_data.get('new_password1')
-#             # if new_password:
-#             #     user.set_password(new_password)
-#             user.save()
-#             return redirect('/project/')
-#             # Realiza acciones adicionales si es necesario
-#     else:
-#         form = CustomUserChangeForm(instance=request.user)
-    
-#     return render(request, 'website_management/edit_profile.html', {'form': form})

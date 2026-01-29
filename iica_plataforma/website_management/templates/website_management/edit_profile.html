@@ -1,42 +1,128 @@
-<!-- se extiende la plantilla genérica-->
 {% extends "generica.html" %}
+{% load static %}
 {% block content %}
 
-  <div class="container" style="background-color:rgb(255, 255, 255,0);width:100%;height: 100%" >
-    <div class="separar"></div>  
-    <div style="overflow-y: scroll;padding:3%;box-shadow: 1px 1px 10px rgb(100, 99, 99); background-color:rgb(255, 255, 255);border-radius:10px;position: relative;top:10%; height: 80%;left:20% ;width: 60%;">
-   <div style="position: relative; width: 100%;height: 80%;">
-    <h2 style="text-align: center;">{{user.username}}</h2>
-    <hr>
-    <form style="position: relative;top:10%;height: 100%;" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ user_form.as_p }}
-        <p><a style="text-decoration: underline;color: #0056b3;cursor: pointer;" onclick="location.href='{% url 'password' %}'">Cambiar contraseña</a></p>
-      <input type="file" name="profile_image" id="profile-image-input" accept="image/*">
-      <div style="padding: 2%;position: relative;float:left;padding-top: 5%;width: 100%;">
-            <button class="btn btn-primary btn-block js-tooltip" type="submit">Guardar</button>
-      
-      <button class="btn btn-danger btn-block js-tooltip" onclick="location.href='{% url 'project-list' %}'" >Cancelar</button>
-          </div>
+<style>
+    :root {
+        --iica-azul: #00589C;
+        --iica-verde: #6EBE44;
+        --gris-fondo: #F4F4F4;
+    }
 
-      </form>
+    .profile-container {
+        min-height: calc(100vh - 180px);
+        background: var(--gris-fondo);
+        padding: 40px 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .profile-card {
+        width: 100%;
+        max-width: 700px;
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        overflow: hidden;
+    }
+
+    .profile-header {
+        background: var(--iica-azul);
+        color: white;
+        padding: 25px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .profile-header img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid white;
+        background: white;
+    }
+
+    .profile-body {
+        padding: 30px;
+    }
+
+    .profile-body input,
+    .profile-body select,
+    .profile-body textarea {
+        margin-bottom: 15px;
+    }
+
+    .profile-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 30px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .profile-actions a {
+        text-decoration: none;
+    }
+</style>
+
+<div class="franja_baja4"></div>
+
+<div class="profile-container">
+
+    <div class="profile-card">
+
+        <!-- HEADER -->
+        <div class="profile-header">
+            <img src="{{ request.user.userprofile.profile_image.url }}"
+                 alt="Foto de perfil">
+
+            <div>
+                <h5 class="fw-bold mb-1">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                </h5>
+                <small>{{ request.user.email }}</small>
+            </div>
+        </div>
+
+        <!-- BODY -->
+        <div class="profile-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {{ user_form.as_p }}
+
+                <div class="mb-3">
+                    <label class="form-label">Foto de perfil</label>
+                    <input type="file"
+                           name="profile_image"
+                           class="form-control"
+                           accept="image/*">
+                </div>
+
+                <a href="{% url 'password' %}" class="text-primary">
+                    Cambiar contraseña
+                </a>
+
+                <!-- ACTIONS -->
+                <div class="profile-actions">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Guardar cambios
+                    </button>
+
+                    <a href="{% url 'Inicio' %}" class="btn btn-outline-danger btn-lg">
+                        Cancelar
+                    </a>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
 
 </div>
 
-
-</div>
-</div>
 {% endblock %}
-
-<!-- edit_profile.html -->
-
-<!-- <form method="post">
-  {% csrf_token %}
-  {{ user_form.as_p }}
-  {{ password_form.as_p }}
-
-  <button type="submit">Guardar cambios</button>
-</form> -->
-
-
-

@@ -210,6 +210,23 @@ if [[ "$MODE" == "production" ]]; then
     docker compose restart nginx_vm
 fi
 
+# -------------------------
+# PREPARACIÓN FINAL
+# -------------------------
+
+    docker compose up --no-build --no-recreate -d redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
+	docker compose exec gunicorn_vm python manage.py makemigrations
+	docker compose exec gunicorn_vm python manage.py migrate
+	if [ "$$MODE" = "production" ]; then \
+		docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
+	fi
+	docker compose down
+
+    docker compose up --no-build -d --no-recreate redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
+	if [ "$$MODE" = "production" ]; then \
+		docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
+	fi
+
 echo "========================================="
 echo " Setup finalizado correctamente "
 echo "========================================="

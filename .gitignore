@@ -1,6 +1,4 @@
 iica_plataforma/media/archivo/*
-iica_plataforma/media/slides/*
-iica_plataforma/media/profile_images/*
 letsencrypt/*
 **/migrations/*
 **/staticfiles/*
@@ -8,7 +6,6 @@ letsencrypt/*
 .env/
 
 !iica_plataforma/media/archivo/
-!iica_plataforma/media/slides/
 !**/__init__.py
 iica_plataforma/docs
 iica_plataforma/iica_plataforma/settings.py

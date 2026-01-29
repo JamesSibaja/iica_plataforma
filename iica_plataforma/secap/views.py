@@ -9,6 +9,8 @@ from django.utils import timezone
 from .utils import calcular_estado_indicador, estado_general_proyecto
 from django.contrib import messages
 from django.http import HttpResponseForbidden
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 
 from .models import (
@@ -22,6 +24,23 @@ from .models import (
     ProyectoEjecucion,
     MiembroComite,
 )
+
+@require_POST
+@login_required
+def crear_indicador(request, proyecto_id):
+    proyecto = get_object_or_404(ProyectoEjecucion, id=proyecto_id)
+
+    try:
+        indicador = Indicador.objects.create(
+            proyecto=proyecto,
+            premisa=request.POST["premisa"],
+            descripcion=request.POST.get("descripcion", ""),
+            valor_maximo=request.POST["valor_maximo"],
+            valor_actual=request.POST["valor_actual"],
+        )
+        return JsonResponse({"ok": True})
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)})
 
 @login_required
 def proyectos_ejecucion(request, proyecto_id=None):
@@ -148,55 +167,7 @@ def indicador_actualizar(request, indicador_id):
         "proyectos_ejecucion",
         proyecto_id=indicador.proyecto.id
     )
-# def proyectos_ejecucion(request, proyecto_id=None):
-#     # Proyectos del usuario
-#     proyectos_usuario = ProyectoEjecucion.objects.filter(
-#         proyecto__encargado=request.user
-#     )
 
-#     # Si no se seleccionó ninguno, elegir el primero
-#     if proyecto_id:
-#         proyecto_sel = get_object_or_404(ProyectoEjecucion, id=proyecto_id)
-#     else:
-#         proyecto_sel = proyectos_usuario.first()
-
-#     indicadores = []
-#     if proyecto_sel:
-#         indicadores = proyecto_sel.indicadores.all()
-
-#     # Crear estructura de colores por indicador y mes
-#     current_month = timezone.now().month
-#     months = [calendar.month_name[i] for i in range(1, 13)]
-
-#     tabla = []  # lista de filas
-
-#     for indicador in indicadores:
-#         fila = {"indicador": indicador, "meses": []}
-
-#         for i in range(1, 13):
-#             color = "#CFCFCF"  # gris por defecto
-
-#             if i <= current_month:
-#                 # buscar alarma ese mes
-#                 alarma = indicador.alarmas.filter(fecha__month=i).order_by("-fecha").first()
-
-#                 if alarma is None:
-#                     color = "#6EBE44"  # verde (OK)
-#                 elif alarma.nivel == "media":
-#                     color = "#FFD93D"  # amarillo
-#                 elif alarma.nivel == "grave":
-#                     color = "#FF595E"  # rojo
-
-#             fila["meses"].append(color)
-
-#         tabla.append(fila)
-
-#     return render(request, "secap/proyectos_ejecucion.html", {
-#         "proyectos_usuario": proyectos_usuario,
-#         "proyecto_sel": proyecto_sel,
-#         "tabla": tabla,
-#         "months": months,
-#     })
 
 def proyecto_menu(request):
     """Menú inicial con dos opciones: nuevos y en ejecución"""
@@ -329,6 +300,7 @@ def decision_comite(request, proyecto_id):
 
     return redirect("proyectos_nuevos")
 
+
 @login_required
 @transaction.atomic
 def proyecto_crear(request):
@@ -348,7 +320,6 @@ def proyecto_crear(request):
             encargado=request.user
         )
 
-        # ================= PROYECTO NUEVO =================
         proyecto_nuevo = ProyectoNuevo.objects.create(
             proyecto=proyecto
         )
@@ -356,7 +327,7 @@ def proyecto_crear(request):
         # ================= CRITERIOS =================
         criterios_ids = set()
 
-        # --- desde grupo ---
+        # --- desde plantilla ---
         grupo_id = request.POST.get("grupo_criterios")
         if grupo_id:
             grupo = GrupoCriterios.objects.get(id=grupo_id)
@@ -364,11 +335,29 @@ def proyecto_crear(request):
                 grupo.criterios.values_list("id", flat=True)
             )
 
-        # --- manuales ---
+        # --- criterios existentes seleccionados ---
         criterios_manual = request.POST.getlist("criterios_manual")
         criterios_ids.update(criterios_manual)
 
-        # crear formularios
+        # --- criterios nuevos ---
+        criterios_nuevos = {}
+
+        for key, value in request.POST.items():
+            if key.startswith("criterios_nuevos["):
+                index = key.split("[")[1].split("]")[0]
+                campo = key.split("[")[2].replace("]", "")
+                criterios_nuevos.setdefault(index, {})
+                criterios_nuevos[index][campo] = value
+
+        for data in criterios_nuevos.values():
+            if data.get("premisa"):
+                criterio = Criterio.objects.create(
+                    premisa=data["premisa"],
+                    descripcion=data.get("descripcion", "")
+                )
+                criterios_ids.add(criterio.id)
+
+        # --- crear formularios ---
         for criterio_id in criterios_ids:
             Formulario.objects.create(
                 proyecto_nuevo=proyecto_nuevo,
@@ -391,7 +380,6 @@ def proyecto_crear(request):
         "criterios": Criterio.objects.all(),
         "usuarios": User.objects.exclude(id=request.user.id),
     })
-
 
 @login_required
 @transaction.atomic

@@ -232,10 +232,13 @@
 }
 
 /* ===== BOTONES ===== */
+
+
 .btn-container {
-    margin-top: 30px;
+    margin-top: 35px;
     display: flex;
     justify-content: center;
+    gap: 25px;
 }
 
 .btn-iica {
@@ -246,6 +249,10 @@
     color: white;
     border: none;
     background: var(--iica-azul);
+}
+
+.btn-crear {
+    background: var(--iica-verde);
 }
 </style>
 <div class="franja_baja4"></div>
@@ -363,8 +370,12 @@
 
                 <div class="row g-4">
 
+                    
+                    
+
                     <!-- ===== MATRIZ ===== -->
                     <div class="col-md-8 tabla-scroll">
+                       
                         <table class="tabla-indicadores  ">
                             <thead>
                                 <tr>
@@ -406,11 +417,70 @@
 
                     <!-- ===== PANEL ===== -->
                     <div class="col-md-4 tabla-scroll">
-                        <div id="panel-indicador" class="panel-lateral text-muted">
-                            <p class="text-center">
-                                Selecciona un indicador para ver su detalle
-                            </p>
+                        <div id="panel-indicador" class="panel-lateral">
+
+                            <div id="panel-vacio" class="text-muted text-center">
+                                <p>Selecciona un indicador para ver su detalle</p>
+                            </div>
+                            {% if proyecto_sel %}
+                            <div id="form-indicador" style="display:none;">
+                                <h6 class="fw-bold mb-3">Nuevo indicador</h6>
+                        
+                                <form id="nuevoIndicadorForm" method="post" data-url="{% if proyecto_sel %}{% url 'crear_indicador' proyecto_sel.id %}{% endif %}">
+
+                                    {% csrf_token %}
+                        
+                                    <div class="mb-3">
+                                        <label class="form-label">Premisa</label>
+                                        <input type="text"
+                                               name="premisa"
+                                               class="form-control"
+                                               required>
+                                    </div>
+                        
+                                    <div class="mb-3">
+                                        <label class="form-label">Descripción</label>
+                                        <textarea name="descripcion"
+                                                  class="form-control"
+                                                  rows="2"></textarea>
+                                    </div>
+                        
+                                    <div class="mb-3">
+                                        <label class="form-label">Valor máximo</label>
+                                        <input type="number"
+                                               name="valor_maximo"
+                                               class="form-control"
+                                               value="100"
+                                               step="0.01"
+                                               required>
+                                    </div>
+                        
+                                    <div class="mb-3">
+                                        <label class="form-label">Valor actual</label>
+                                        <input type="number"
+                                               name="valor_actual"
+                                               class="form-control"
+                                               value="0"
+                                               step="0.01"
+                                               required>
+                                    </div>
+                        
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="button"
+                                                class="btn btn-secondary btn-sm"
+                                                onclick="cerrarFormularioIndicador()">
+                                            Cancelar
+                                        </button>
+                                        <button type="submit"
+                                                class="btn btn-success btn-sm">
+                                            Guardar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            {% endif %}
                         </div>
+                        
                     </div>
 
                 </div>
@@ -426,6 +496,18 @@
                         onclick="location.href='{% url 'proyecto_menu' %}'">
                     Volver al menú
                 </button>
+                {% if es_encargado %}
+                    {% if proyecto_sel %}
+                        <button class="btn-iica btn-crear"
+                                onclick="abrirFormularioIndicador()">
+                            Nuevo indicador
+                        </button>
+                    
+                    {% endif %}
+
+                
+                {% endif %}
+
             </div>
 
         </div>
@@ -441,6 +523,58 @@ document.querySelectorAll(".fila-indicador").forEach(fila => {
             });
     });
 });
+
+
 </script>
+
+<script>
+    function abrirFormularioIndicador() {
+        document.getElementById("panel-vacio").style.display = "none";
+        document.getElementById("form-indicador").style.display = "block";
+    }
+    
+    function cerrarFormularioIndicador() {
+        document.getElementById("form-indicador").style.display = "none";
+        document.getElementById("panel-vacio").style.display = "block";
+    }
+    
+    const form = document.getElementById("nuevoIndicadorForm");
+    
+    if (form) {
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+    
+            const url = this.dataset.url;
+    
+            if (!url) {
+                alert("No hay un proyecto seleccionado.");
+                return;
+            }
+    
+            const formData = new FormData(this);
+    
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+                },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    location.reload(); // recarga matriz
+                } else {
+                    alert(data.error || "Error al crear el indicador");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Error de conexión");
+            });
+        });
+    }
+    </script>
+    
 
 {% endblock %}
