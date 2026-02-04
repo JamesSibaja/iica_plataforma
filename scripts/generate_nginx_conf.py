@@ -53,11 +53,14 @@ http {
         }
 
         location /static/ {
-            alias /app/staticfiles/;
+            alias /app/static/;
+            access_log off;
+            expires 30d;
         }
 
         location /media/ {
             alias /app/media/;
+            access_log off;
         }
     }
 """
@@ -112,6 +115,7 @@ http {
 
         location /media/ {
             alias /app/media/;
+            access_log off;
         }
     }
 """

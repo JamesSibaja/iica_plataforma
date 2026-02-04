@@ -224,7 +224,7 @@
 
 </div>
 
-<!-- ================== JS CORRECTO ================== -->
+<!-- ================== JS  ================== -->
 <script>
     document.addEventListener("click", function (e) {
     
@@ -240,13 +240,65 @@
         // 2️ Marcar fila actual
         fila.classList.add("seleccionada");
     
-        // 3️ Cargar panel de detalle (URL CORRECTA)
+        
         fetch(`/proyectos/detalle/${proyectoId}/`)
             .then(r => r.text())
             .then(html => {
                 document.getElementById("panel-detalle").innerHTML = html;
             });
     });
-    </script>
+</script>
+
+<script>
+    window.enviarDecision = function (decision) {
+        const form = document.getElementById("decisionComiteForm");
+        if (!form) {
+            console.error("Formulario de decisión no encontrado");
+            return;
+        }
+    
+        const url = form.dataset.url;
+        const formData = new FormData(form);
+        formData.append("decision", decision);
+    
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+            },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                actualizarEstadoVisual(data.decision);
+            } else {
+                alert(data.error || "Error al registrar la decisión");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Error de comunicación con el servidor");
+        });
+    };
+    
+    window.actualizarEstadoVisual = function (decision) {
+        const badge = document.getElementById("estado-decision");
+        if (!badge) return;
+    
+        badge.className = "badge rounded-pill";
+    
+        if (decision === "aprobado") {
+            badge.classList.add("bg-success");
+            badge.textContent = "Aprobado";
+        } else if (decision === "rechazado") {
+            badge.classList.add("bg-danger");
+            badge.textContent = "Rechazado";
+        } else {
+            badge.classList.add("bg-secondary");
+            badge.textContent = "Pendiente";
+        }
+    };
+ </script>
     
 {% endblock %}

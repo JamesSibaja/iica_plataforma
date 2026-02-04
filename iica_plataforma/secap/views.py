@@ -13,6 +13,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 
+
 from .models import (
     Proyecto,
     ProyectoNuevo,
@@ -280,8 +281,15 @@ def guardar_calificaciones(request, proyecto_id):
 
     return redirect("proyectos_nuevos")
 
+
 @login_required
 def decision_comite(request, proyecto_id):
+    if request.method != "POST":
+        return JsonResponse({
+            "ok": False,
+            "error": "Método no permitido"
+        }, status=405)
+
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
 
     miembro = get_object_or_404(
@@ -290,15 +298,25 @@ def decision_comite(request, proyecto_id):
         usuario=request.user
     )
 
-    if request.method == "POST":
-        decision = request.POST.get("decision")
-        comentario = request.POST.get("comentario", "")
+    decision = request.POST.get("decision")
+    comentario = request.POST.get("comentario", "")
 
-        miembro.comentario = comentario
-        miembro.aprobado = (decision == "aprobar")
-        miembro.save()
+    if decision not in ["aprobar", "rechazar"]:
+        return JsonResponse({
+            "ok": False,
+            "error": "Decisión inválida"
+        }, status=400)
 
-    return redirect("proyectos_nuevos")
+    miembro.aprobado = (decision == "aprobar")
+    miembro.comentario = comentario
+    miembro.save()
+
+    return JsonResponse({
+        "ok": True,
+        "decision": "aprobado" if miembro.aprobado else "rechazado",
+        "comentario": miembro.comentario
+    })
+
 
 
 @login_required

@@ -44,7 +44,7 @@
             {% endfor %}
 
             {% if es_mi_cartera and formularios %}
-                <button class="btn btn-success w-100 mt-3">
+                <button class="btn btn-iica btn-volver w-100 mt-3">
                     Guardar cambios
                 </button>
             {% endif %}
@@ -77,37 +77,75 @@
                   action="{% url 'proyecto_iniciar' proyecto.id %}"
                   onsubmit="return confirm('¿Deseas iniciar la ejecución de este proyecto?');">
                 {% csrf_token %}
-                <button class="btn btn-success w-100 py-2">
-                    🚀 Iniciar ejecución del proyecto
+                <button class="btn btn-iica btn-crear w-100 py-2">
+                    Iniciar ejecución del proyecto
                 </button>
             </form>
         {% endif %}
 
         {% if es_comite %}
-            <hr>
-            <h5>Decisión del comité</h5>
-
-            <form method="post"
-                  action="{% url 'decision_comite' proyecto.id %}">
-                {% csrf_token %}
-
+        <hr>
+        
+        <h6 class="fw-bold text-primary mb-3">
+            Decisión del comité
+        </h6>
+        
+        <!-- ===== ESTADO ACTUAL ===== -->
+        <div class="mb-3">
+            <span class="fw-semibold me-2">Estado actual:</span>
+        
+            {% if proyecto.decision_comite == "aprobado" %}
+                <span id="estado-decision"
+                      class="badge rounded-pill bg-success">
+                    Aprobado
+                </span>
+            {% elif proyecto.decision_comite == "rechazado" %}
+                <span id="estado-decision"
+                      class="badge rounded-pill bg-danger">
+                    Rechazado
+                </span>
+            {% else %}
+                <span id="estado-decision"
+                      class="badge rounded-pill bg-secondary">
+                    Pendiente
+                </span>
+            {% endif %}
+        </div>
+        
+        <!-- ===== FORMULARIO ===== -->
+        <form id="decisionComiteForm"
+              data-url="{% url 'decision_comite' proyecto.id %}">
+        
+            {% csrf_token %}
+        
+            <div class="mb-3">
+                <label class="form-label small text-muted">
+                    Comentario del comité (opcional)
+                </label>
                 <textarea name="comentario"
-                          class="form-control mb-3"
-                          placeholder="Comentario del comité"></textarea>
-
-                <button name="decision"
-                        value="aprobar"
-                        class="btn btn-success w-100 mb-2">
+                          class="form-control"
+                          rows="2"
+                          placeholder="Ej. Aprobado con observaciones menores…"></textarea>
+            </div>
+        
+            <div class="d-flex gap-2">
+                <button type="button"
+                        class="btn btn-primary btn-sm flex-fill"
+                        onclick="enviarDecision('aprobar')">
                     Aprobar
                 </button>
-
-                <button name="decision"
-                        value="rechazar"
-                        class="btn btn-danger w-100">
+        
+                <button type="button"
+                        class="btn btn-secondary btn-sm flex-fill"
+                        onclick="enviarDecision('rechazar')">
                     Rechazar
                 </button>
-            </form>
+            </div>
+        </form>
         {% endif %}
+        
     </div>
 
 </div>
+
+
