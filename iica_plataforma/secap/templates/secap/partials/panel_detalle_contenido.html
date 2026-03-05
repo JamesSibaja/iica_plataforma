@@ -12,6 +12,7 @@
         <p class="small text-muted mb-2 texto-descripcion">
             {{ proyecto.descripcion }}
         </p>
+       
         <hr class="my-4">
         <h5 class="mb-3">Criterios de evaluación</h5>
         <form method="post"
@@ -81,6 +82,27 @@
                     Iniciar ejecución del proyecto
                 </button>
             </form>
+
+            <hr class="my-4">
+
+            <h5 class="mb-3">Opciones</h5>
+
+            <form method="post"
+                action="{% url 'proyecto_eliminar' proyecto.id %}"
+                onsubmit="return confirm('¿Eliminar este proyecto?');">
+                {% csrf_token %}
+                <button   class="btn btn-outline-danger fw-semibold w-100 py-2">
+                    Eliminar proyecto
+                </button>
+            </form>
+            <form method="post"
+                action="{% url 'proyecto_editar' proyecto.id %}">
+                {% csrf_token %}
+                <button style="margin-top:20px ;"  class="btn btn-outline-warning fw-semibold w-100 py-2">
+                    Editar proyecto
+                </button>
+            </form>
+
         {% endif %}
 
         {% if es_comite %}

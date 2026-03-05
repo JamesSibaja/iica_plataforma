@@ -2,7 +2,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "KGqzR4rny3jHbA/OwJBTLIYliCZEek34BLs0C4OFE16XAaEM/9/3duiYZ9LFQzwD"
+SECRET_KEY = "bNtb6FixdmmcKNuIeW1o9sHJV1vwpz/BhQycX8SVW/PJSrHcqx8Eniav6d8E8a4D"
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
@@ -76,9 +76,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-STATICFILES_DIRS = []
-if DEBUG and (BASE_DIR / 'static').exists():
-    STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

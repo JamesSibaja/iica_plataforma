@@ -484,6 +484,31 @@ def meta_indicador_eliminar(request, meta_id):
         indicador.proyecto.id
     )
 
+@login_required
+@transaction.atomic
+def proyecto_eliminar(request, proyecto_id):
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+
+    if request.user != proyecto.encargado:
+        return HttpResponseForbidden()
+
+    if request.method == "POST":
+        proyecto.delete()
+
+    return redirect("proyectos_nuevos")
+
+@login_required
+@transaction.atomic
+def proyecto_editar(request, proyecto_id):
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+
+    if request.user != proyecto.encargado:
+        return HttpResponseForbidden()
+
+    if request.method == "POST":
+        proyecto.delete()
+
+    return redirect("proyectos_nuevos")
 
 
 
