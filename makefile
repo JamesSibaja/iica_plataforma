@@ -94,7 +94,12 @@ clean:
 	@echo " LIMPIEZA COMPLETA FINALIZADA"
 	@echo "==============================================="
 
-
+deploy:
+	git pull
+	docker compose build
+	docker compose up -d
+	docker compose exec gunicorn_vm python manage.py migrate
+	docker compose exec gunicorn_vm python manage.py collectstatic --noinput
 
 fix-docker-permissions:
 	@sudo usermod -aG docker $$(whoami)

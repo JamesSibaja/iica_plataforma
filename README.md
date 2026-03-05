@@ -42,6 +42,14 @@ sudo make setup
 ```
 Escribe 's' cuando pregunte '¿Modo producción? ' y sigue las intrucciones
 
+## Actualizaciones
+
+Para realizar actualizaciones ejecuta el siguiente comando:
+
+```bash
+sudo make deploy
+```
+
 ## Información adicional
 
 Este sistema ha sido probado en Ubuntu 24.04
