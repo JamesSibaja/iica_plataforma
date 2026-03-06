@@ -1,5 +1,5 @@
 import sys
-import os
+
 
 def generate_nginx_conf(mode, domain, with_ssl=False):
     conf = """
@@ -11,8 +11,9 @@ events {
 http {
     client_max_body_size 150G;
     proxy_read_timeout 600s;
-    include       /etc/nginx/mime.types;
-    default_type  application/octet-stream;
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
 
     upstream django_app {
         server gunicorn_vm:8765;
@@ -22,7 +23,7 @@ http {
         server daphne_vm:8089;
     }
 
-    # Server por defecto para IPs directas (bloquea accesos raros)
+    # Bloquear accesos directos por IP
     server {
         listen 80 default_server;
         server_name _;
@@ -30,6 +31,9 @@ http {
     }
 """
 
+    # -------------------------
+    # DEVELOPMENT
+    # -------------------------
     if mode == "development":
         conf += """
     server {
@@ -64,7 +68,13 @@ http {
         }
     }
 """
+
+    # -------------------------
+    # PRODUCTION
+    # -------------------------
     elif mode == "production":
+
+        # HTTP SERVER (siempre existe para ACME challenge)
         conf += f"""
     server {{
         listen 80;
@@ -83,7 +93,8 @@ http {
     }
 
     server {
-        listen 443 ssl http2;
+        listen 443 ssl;
+        http2 on;
         server_name """ + domain + """;
 
         ssl_certificate /etc/letsencrypt/live/""" + domain + """/fullchain.pem;

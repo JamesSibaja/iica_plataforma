@@ -201,6 +201,12 @@ if [[ "$MODE" == "production" ]]; then
         sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
     fi
 
+    echo "Generando configuración Nginx SOLO HTTP temporal..."
+    python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN"
+
+    echo "Arrancando nginx temporal para challenge ACME..."
+    docker compose up -d nginx_vm
+
     echo "Solicitando certificados SSL..."
     sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || echo "⚠️ SSL pendiente"
 

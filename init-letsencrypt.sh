@@ -62,6 +62,6 @@ fi
 "$ACME_BIN" --install-cert -d "$domains" \
   --key-file "$data_path_conf/live/$domains/privkey.pem" \
   --fullchain-file "$data_path_conf/live/$domains/fullchain.pem" \
-  --reloadcmd "docker compose exec nginx_vm nginx -s reload"
+  --reloadcmd "docker compose restart nginx_vm""
 
 echo "SSL configurado correctamente"
