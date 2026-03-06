@@ -210,7 +210,7 @@ if [[ "$MODE" == "production" ]]; then
     docker compose up -d nginx_vm
 
     echo "Solicitando certificados SSL..."
-    sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || true
+    ./init-letsencrypt.sh "$DOMAIN" "$EMAIL"
 
     echo "Verificando certificado..."
 

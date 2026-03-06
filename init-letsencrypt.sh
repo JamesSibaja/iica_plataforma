@@ -11,14 +11,6 @@ data_path="./letsencrypt"
 data_path_conf="./letsencrypt/conf"
 
 # -------------------------
-# ROOT CHECK
-# -------------------------
-if [[ "$EUID" -ne 0 ]]; then
-  echo "Ejecuta con sudo"
-  exit 1
-fi
-
-# -------------------------
 # DEPENDENCIAS
 # -------------------------
 apt-get update -qq
