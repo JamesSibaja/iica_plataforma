@@ -195,6 +195,8 @@ docker compose run --rm \
 # -------------------------
 if [[ "$MODE" == "production" ]]; then
 
+    CERT_PATH="./letsencrypt/conf/live/$DOMAIN/fullchain.pem"
+
     if [[ ! -f /etc/ssl/certs/dhparam.pem ]]; then
         echo "Generando dhparam.pem..."
         sudo mkdir -p /etc/ssl/certs
@@ -208,12 +210,29 @@ if [[ "$MODE" == "production" ]]; then
     docker compose up -d nginx_vm
 
     echo "Solicitando certificados SSL..."
-    sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || echo "⚠️ SSL pendiente"
+    sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || true
 
-    echo "Regenerando Nginx con SSL..."
-    python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
+    echo "Verificando certificado..."
 
-    docker compose restart nginx_vm
+    if [[ -f "$CERT_PATH" ]]; then
+        echo "Certificado encontrado ✔"
+
+        echo "Regenerando Nginx con SSL..."
+        python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
+
+        docker compose restart nginx_vm
+
+        echo "SSL activado correctamente"
+
+    else
+        echo "⚠️ Certificado aún no emitido"
+        echo "El servidor continuará solo con HTTP"
+        echo "Podrás activar SSL luego ejecutando:"
+        echo ""
+        echo "python3 scripts/generate_nginx_conf.py production $DOMAIN --with-ssl"
+        echo "docker compose restart nginx_vm"
+    fi
+
 fi
 
 # -------------------------
