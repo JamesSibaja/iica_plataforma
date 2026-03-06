@@ -44,8 +44,8 @@ fi
 # -------------------------
 # CONFIGURAR ACME.SH
 # -------------------------
-"$ACME_BIN" --set-default-ca --server zerossl
-"$ACME_BIN" --register-account -m "$email" --server zerossl || true
+"$ACME_BIN" --set-default-ca --server letsencrypt
+"$ACME_BIN" --register-account -m "$email" --server letsencrypt || true
 
 # -------------------------
 # EMITIR CERTIFICADO
