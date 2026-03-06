@@ -11,6 +11,14 @@ data_path="./letsencrypt"
 data_path_conf="./letsencrypt/conf"
 
 # -------------------------
+# ROOT CHECK
+# -------------------------
+if [[ "$EUID" -ne 0 ]]; then
+  echo "Ejecuta con sudo"
+  exit 1
+fi
+
+# -------------------------
 # DEPENDENCIAS
 # -------------------------
 apt-get update -qq
@@ -36,8 +44,8 @@ fi
 # -------------------------
 # CONFIGURAR ACME.SH
 # -------------------------
-"$ACME_BIN" --set-default-ca --server letsencrypt
-"$ACME_BIN" --register-account -m "$email" --server letsencrypt || true
+"$ACME_BIN" --set-default-ca --server zerossl
+"$ACME_BIN" --register-account -m "$email" --server zerossl || true
 
 # -------------------------
 # EMITIR CERTIFICADO
@@ -54,6 +62,6 @@ fi
 "$ACME_BIN" --install-cert -d "$domains" \
   --key-file "$data_path_conf/live/$domains/privkey.pem" \
   --fullchain-file "$data_path_conf/live/$domains/fullchain.pem" \
-  --reloadcmd "docker compose restart nginx_vm"
+  --reloadcmd "docker compose exec nginx_vm nginx -s reload"
 
 echo "SSL configurado correctamente"
