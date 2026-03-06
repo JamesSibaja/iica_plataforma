@@ -149,60 +149,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 EOL
 
 # -------------------------
-# NGINX CONF (SIN SSL)
-# -------------------------
-echo "Generando configuración inicial de Nginx..."
-python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN"
-
-# -------------------------
-# DOCKER COMPOSE UP
-# -------------------------
-echo "Levantando contenedores..."
-
-if [ "$MODE" = "production" ]; then
-  docker compose \
-    -f docker-compose.yml \
-    -f docker-compose.prod.yml \
-    up -d --build
-else
-  docker compose up -d --build
-fi
-
-# -------------------------
-# MIGRATIONS + STATIC
-# -------------------------
-echo "Aplicando migraciones..."
-docker compose exec gunicorn_vm python manage.py makemigrations
-docker compose exec gunicorn_vm python manage.py migrate
-
-if [ "$MODE" = "production" ]; then
-    echo "Recolectando archivos estáticos..."
-    docker compose exec gunicorn_vm python manage.py collectstatic --noinput
-fi
-
-# -------------------------
-# SUPERUSER
-# -------------------------
-echo "Creando superusuario..."
-docker compose run --rm \
-  -e DJANGO_SUPERUSER_EMAIL="$EMAIL" \
-  -e DJANGO_SUPERUSER_PASSWORD="$PASSWORD" \
-  gunicorn_vm \
-  python /app/scripts/create_superuser.py
-
-# -------------------------
 # SSL (PRODUCCIÓN)
 # -------------------------
 if [[ "$MODE" == "production" ]]; then
-
-    if [[ ! -f /etc/ssl/certs/dhparam.pem ]]; then
-        echo "Generando dhparam.pem..."
-        sudo mkdir -p /etc/ssl/certs
-        sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
-    fi
-
     echo "Solicitando certificados SSL..."
-    sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || echo "⚠️ SSL pendiente"
+    sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL"
 
     echo "Regenerando Nginx con SSL..."
     python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
@@ -213,19 +164,18 @@ fi
 # -------------------------
 # PREPARACIÓN FINAL
 # -------------------------
+docker compose up --no-build --no-recreate -d redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
+docker compose exec gunicorn_vm python manage.py makemigrations
+docker compose exec gunicorn_vm python manage.py migrate
+if [ "$MODE" = "production" ]; then
+    docker compose exec gunicorn_vm python manage.py collectstatic --noinput
+fi
+docker compose down
 
-    docker compose up --no-build --no-recreate -d redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
-	docker compose exec gunicorn_vm python manage.py makemigrations
-	docker compose exec gunicorn_vm python manage.py migrate
-	if [ "$$MODE" = "production" ]; then \
-		docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
-	fi
-	docker compose down
-
-    docker compose up --no-build -d --no-recreate redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
-	if [ "$$MODE" = "production" ]; then \
-		docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
-	fi
+docker compose up --no-build -d --no-recreate redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
+if [ "$MODE" = "production" ]; then
+    docker compose exec gunicorn_vm python manage.py collectstatic --noinput
+fi
 
 echo "========================================="
 echo " Setup finalizado correctamente "
