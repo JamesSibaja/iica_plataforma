@@ -36,6 +36,9 @@ PASSWORD=${password:? "La contraseña no puede estar vacía"}
 
 export MODE
 
+echo "MODE=$MODE" > .env
+echo "Dominio: $DOMAIN" > .env
+
 echo "Modo: $MODE"
 echo "Dominio: $DOMAIN"
 

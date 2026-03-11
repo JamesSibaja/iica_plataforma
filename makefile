@@ -1,5 +1,8 @@
 .PHONY: setup run debug stop clean fix-docker-permissions migration deploy
 
+include .env
+export $(shell sed 's/=.*//' .env)
+
 # Variables
 export DJANGO_SETTINGS_MODULE=iica_plataforma.settings
 COMPOSE=docker compose
