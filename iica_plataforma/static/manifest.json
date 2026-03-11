@@ -1,7 +1,7 @@
 {
   "name": "Plataforma IICA CR",
   "short_name": "IICA CR",
-  "start_url": "./",
+  "start_url": "./img/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0a84ff",
