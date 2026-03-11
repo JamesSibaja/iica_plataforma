@@ -69,6 +69,11 @@ deploy:
 	@echo ">>> Reiniciando servicios web..."
 	$(COMPOSE) restart gunicorn_vm daphne_vm nginx_vm
 
+	$(COMPOSE) up --no-build -d --no-recreate $(SERVICES)
+	@if [ "$$MODE" = "production" ]; then \
+		$(COMPOSE) exec -T gunicorn_vm python manage.py collectstatic --noinput; \
+	fi
+
 	@echo "========================================="
 	@echo " DEPLOY COMPLETADO"
 	@echo "========================================="
