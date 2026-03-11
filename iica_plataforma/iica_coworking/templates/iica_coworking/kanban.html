@@ -1,0 +1,481 @@
+{% extends "generica.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+        background: white;
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    }
+    
+    .tabla-scroll {
+        max-height: calc(65vh - 0px);
+        overflow-y: auto;
+    }
+    
+    .sidebar h3 {
+        color: var(--iica-azul);
+        font-weight: 800;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    
+    /* ===== ITEMS ===== */
+    .proyecto-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 10px;
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+    
+    .proyecto-item:hover {
+        background: rgba(79,163,209,.10);
+    }
+    
+    .proyecto-active {
+        background: var(--iica-azul);
+        color: white;
+    }
+    
+    .proyecto-nombre {
+        font-weight: 600;
+        font-size: .95rem;
+    }
+    
+    /* ===== INDICADOR GENERAL ===== */
+    .estado-general {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    
+    /* Escala */
+    .estado-0 { background: var(--iica-verde); }
+    .estado-1 { background: var(--iica-verde-lima); }
+    .estado-2 { background: var(--iica-amarillo); }
+    .estado-3 { background: var(--iica-naranja); }
+    .estado-4 { background: var(--iica-rojo); }
+    
+    /* ===== TABS ===== */
+    .nav-pills .nav-link {
+        font-weight: 600;
+        color: var(--iica-azul);
+    }
+    
+    .nav-pills .nav-link.active {
+        background: var(--iica-azul);
+    }
+    
+    
+    :root {
+        --iica-azul: #00589C;
+        --iica-verde: #00a380;
+        --iica-verde-lima: #8db400;
+        --iica-amarillo: #fceb07;
+        --iica-naranja: #ff8d30;
+        --iica-rojo: #fd1b23;
+        --gris-fondo: #F4F4F4;
+        --gris-borde: #DDDDDD;
+    }
+    
+    /* ===== CONTENEDOR GENERAL ===== */
+    .main-container {
+        min-height: calc(100vh - 100px);
+        background: var(--gris-fondo);
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 8px 25px rgba(0,0,0,.15);
+    }
+    
+    /* ===== SIDEBAR ===== */
+    /* .sidebar {
+        background: white;
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    }
+    
+    .sidebar h3 {
+        color: var(--iica-azul);
+        font-weight: 800;
+        margin-bottom: 18px;
+        text-align: center;
+    } */
+    /* Header fijo */
+    .proyectos-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+    
+    .proyecto-item {
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all .2s ease;
+    }
+    
+    .semana-actual {
+        color: #ff8800;
+        font-weight: 700;
+        text-shadow: 0 0 0.5px currentColor;
+    }
+    
+    
+    .proyecto-item:hover {
+        background: rgba(79,163,209,.12);
+    }
+    
+    .proyecto-active {
+        background: var(--iica-azul);
+        color: white;
+    }
+    
+    /* ===== TITULO ===== */
+    .titulo-proyecto {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--iica-azul);
+        margin-bottom: 25px;
+    }
+    
+    /* ===== TABLA ===== */
+    .tabla-indicadores {
+        width: 100%;
+        background: white;
+        border-radius: 14px;
+        border-collapse: collapse;
+        overflow: hidden;
+        box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    }
+    
+    .tabla-indicadores thead {
+        background: var(--iica-azul);
+        color: white;
+    }
+    
+    .tabla-indicadores th,
+    .tabla-indicadores td {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid var(--gris-borde);
+    }
+    
+    .tabla-indicadores th:first-child,
+    .tabla-indicadores td:first-child {
+        text-align: left;
+        padding-left: 16px;
+    }
+    
+    /* ===== FILAS ===== */
+    .fila-indicador {
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+    
+    .fila-indicador:hover {
+        background: rgba(79,163,209,.08);
+    }
+    
+    /* ===== CELDAS DE ESTADO ===== */
+    .celda {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin: auto;
+        /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.596); */
+        box-shadow: 0 0px 4px rgba(0, 0, 0, 0.596);
+    
+        box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.74);
+    }
+    
+    .celda.actual {
+        width: 30px;
+        height: 30px;    
+        border-radius: 50%;
+        box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.74);
+    }
+    
+    .celda.futuro {
+        opacity: .75;
+        width: 15px;
+        height: 15px;
+        box-shadow: 0 0px 3px rgba(0, 0, 0, 0.596);
+    }
+    
+    /* Escala de colores */
+    .estado-0 { background: var(--iica-verde); }
+    .estado-1 { background: var(--iica-verde-lima); }
+    .estado-2 { background: var(--iica-amarillo); }
+    .estado-3 { background: var(--iica-naranja); }
+    .estado-4 { background: var(--iica-rojo); }
+    
+    /* ===== PANEL LATERAL ===== */
+    .panel-lateral {
+        background: white;
+        border-radius: 14px;
+        padding: 20px;
+        min-height: 300px;
+        box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    }
+    
+    /* ===== BOTONES ===== */
+    
+    
+    .btn-container {
+        margin-top: 35px;
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+    }
+    
+    .btn-iica {
+        padding: 14px 26px;
+        border-radius: 10px;
+        font-size: 1.15rem;
+        font-weight: bold;
+        color: white;
+        border: none;
+        background: var(--iica-azul);
+    }
+    
+    .btn-crear {
+        background: var(--iica-verde);
+    }
+    </style>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<style>
+.kanban-col{
+    min-height:400px;
+}
+.tarea{
+    cursor:grab;
+}
+</style>
+
+<div class="franja_baja4"></div>
+
+<div class="main-container">
+
+<ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+        <a class="nav-link active" href="{% url 'okr_kanban' %}">
+            Kanban
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'okr_tablero' %}">
+            OKR
+        </a>
+    </li>
+</ul>
+
+<div class="row">
+
+<!-- PENDIENTES -->
+<div class="col-md-3">
+
+<h5>Pendientes</h5>
+
+<div class="kanban-col" id="pendiente">
+
+{% for t in tareas_pendientes %}
+
+<div class="card mb-2 tarea" data-id="{{ t.id }}">
+
+<div class="card-body">
+
+<strong>{{ t.titulo }}</strong>
+
+<div class="small text-muted">
+{{ t.iniciativa.nombre }}
+</div>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+</div>
+
+
+<!-- EJECUCION -->
+
+<div class="col-md-3">
+
+<h5>En ejecución</h5>
+
+<div class="kanban-col" id="ejecucion">
+
+{% for t in tareas_ejecucion %}
+
+<div class="card mb-2 tarea" data-id="{{ t.id }}">
+
+<div class="card-body">
+
+<strong>{{ t.titulo }}</strong>
+
+<div class="small text-muted">
+{{ t.iniciativa.nombre }}
+</div>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+</div>
+
+
+<!-- ESPERA -->
+
+<div class="col-md-3">
+
+<h5>En espera</h5>
+
+<div class="kanban-col" id="espera">
+
+{% for t in tareas_espera %}
+
+<div class="card mb-2 tarea" data-id="{{ t.id }}">
+
+<div class="card-body">
+
+<strong>{{ t.titulo }}</strong>
+
+<div class="small text-muted">
+{{ t.iniciativa.nombre }}
+</div>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+</div>
+
+
+<!-- TERMINADAS -->
+
+<div class="col-md-3">
+
+<h5>Terminadas</h5>
+
+<div class="kanban-col" id="terminada">
+
+{% for t in tareas_terminadas %}
+
+<div class="card mb-2 tarea" data-id="{{ t.id }}">
+
+<div class="card-body">
+
+<strong>{{ t.titulo }}</strong>
+
+<div class="small text-muted">
+{{ t.iniciativa.nombre }}
+</div>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+</div>
+
+</div>
+</div>
+
+
+<script>
+
+/* =========================
+WEBSOCKET
+========================= */
+
+const socket = new WebSocket(
+"ws://" + window.location.host + "/ws/kanban/"
+);
+
+
+/* =========================
+RECIBIR CAMBIOS
+========================= */
+
+socket.onmessage = function(e){
+
+    const data = JSON.parse(e.data);
+
+    const tarea = document.querySelector(
+        `[data-id='${data.tarea_id}']`
+    );
+
+    const columna = document.getElementById(data.estado);
+
+    if(tarea && columna){
+
+        columna.appendChild(tarea);
+
+    }
+
+};
+
+
+/* =========================
+SORTABLE
+========================= */
+
+const columnas = document.querySelectorAll(".kanban-col");
+
+columnas.forEach(col => {
+
+    new Sortable(col, {
+
+        group:"kanban",
+
+        animation:150,
+
+        onEnd:function(evt){
+
+            const tarea = evt.item.dataset.id;
+
+            const nuevoEstado = evt.to.id;
+
+            socket.send(JSON.stringify({
+
+                tarea_id:tarea,
+                estado:nuevoEstado
+
+            }));
+
+        }
+
+    });
+
+});
+
+</script>
+
+{% endblock %}

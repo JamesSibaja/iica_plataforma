@@ -2,7 +2,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "bNtb6FixdmmcKNuIeW1o9sHJV1vwpz/BhQycX8SVW/PJSrHcqx8Eniav6d8E8a4D"
+SECRET_KEY = "iRSsEHme2q/Xjlebviha16qiRlgxEb9VTi9ZS+n/+x2qrCQusOG1zOrL9fzyKU2q"
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'django.contrib.staticfiles',
     'secap',
+    'iica_coworking',
     'website_management',
 ]
 

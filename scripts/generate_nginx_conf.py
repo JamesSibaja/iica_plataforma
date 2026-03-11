@@ -73,54 +73,65 @@ http {
         location /.well-known/acme-challenge/ {{
             root /var/www/certbot;
         }}
+"""
 
-        location / {{
+        if with_ssl:
+            conf += """
+        location / {
             return 301 https://$host$request_uri;
-        }}
-    }}
+        }
+    }
 
-    server {{
+    server {
         listen 443 ssl http2;
-        server_name {domain};
+        server_name """ + domain + """;
 
-        ssl_certificate /etc/letsencrypt/live/{domain}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/{domain}/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/""" + domain + """/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/""" + domain + """/privkey.pem;
 
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_prefer_server_ciphers on;
 
-        location / {{
+        location / {
             proxy_pass http://django_app;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto https;
-        }}
+        }
 
-        location /ws/ {{
+        location /ws/ {
             proxy_pass http://daphne_app;
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
-        }}
+        }
 
-        location /static/ {{
+        location /static/ {
             alias /app/staticfiles/;
             access_log off;
             expires 30d;
-        }}
+        }
 
-        location /media/ {{
+        location /media/ {
             alias /app/media/;
             access_log off;
-        }}
-    }}
+        }
+    }
+"""
+        else:
+            conf += """
+        location / {
+            proxy_pass http://django_app;
+        }
+    }
 """
 
     conf += "\n}\n"
 
     with open("nginx.conf", "w") as f:
         f.write(conf)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:

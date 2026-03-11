@@ -4,6 +4,19 @@
 <head>
   {% load static %}
   {% block title %}<title>IICA Costa Rica</title>{% endblock %}
+  <!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1b4332">
+
+<!-- iOS soporte -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Plataforma IICA CR">
+
+<!-- Iconos -->
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
+
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -183,7 +196,7 @@
             </li>
         
             <li class="nav-item">
-                <a class="nav-link" href="#">IICA Coworking CR</a>
+                <a class="nav-link" href="{% url 'okr_kanban' %}">IICA Coworking CR</a>
             </li>
         
             <li class="nav-item">

@@ -22,6 +22,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include("website_management.urls")),
     path('',include("secap.urls")),
+    path('',include("iica_coworking.urls")),
     # path('',include("projects.urls")),
 ]
 
