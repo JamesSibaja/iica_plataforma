@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'channels',
     'daphne',
+    'iica_coworking',
     'django_celery_results',
     'django.contrib.staticfiles',
     'secap',
