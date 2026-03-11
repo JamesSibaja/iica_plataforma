@@ -1,90 +1,128 @@
-.PHONY: setup run clean fix-docker-permissions migration
+.PHONY: setup run debug stop clean fix-docker-permissions migration deploy
 
-# Variables de entorno
+# Variables
 export DJANGO_SETTINGS_MODULE=iica_plataforma.settings
+COMPOSE=docker compose
+SERVICES=redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
 
 setup: fix-docker-permissions
-	# Ejecutar script de configuración
 	@sudo chmod +x ./init-letsencrypt.sh
 	@sudo mkdir -p /var/www/certbot
 	@sudo chmod 755 /var/www/certbot
+
 	@sudo mkdir -p ./letsencrypt/www
 	@sudo chmod -R 755 ./letsencrypt/www
+
 	@sudo mkdir -p letsencrypt/conf
 	@sudo chmod -R 755 letsencrypt/conf
 	@sudo mkdir -p letsencrypt/conf/live/
 	@sudo chmod -R 755 letsencrypt/conf/live/
+
 	@bash setup.sh
 
+
 run:
-	docker compose up --no-build -d --no-recreate redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
-	if [ "$$MODE" = "production" ]; then \
-		docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
+	$(COMPOSE) up --no-build -d --no-recreate $(SERVICES)
+	@if [ "$$MODE" = "production" ]; then \
+		$(COMPOSE) exec -T gunicorn_vm python manage.py collectstatic --noinput; \
 	fi
+
 
 debug:
-	docker compose up --no-build --no-recreate redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
-	if [ "$$MODE" = "production" ]; then \
-		docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
+	$(COMPOSE) up --no-build --no-recreate $(SERVICES)
+	@if [ "$$MODE" = "production" ]; then \
+		$(COMPOSE) exec -T gunicorn_vm python manage.py collectstatic --noinput; \
 	fi
+
 
 migration:
-	docker compose up --no-build --no-recreate -d redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
-	docker compose exec gunicorn_vm python manage.py makemigrations
-	docker compose exec gunicorn_vm python manage.py migrate
-	if [ "$$MODE" = "production" ]; then \
-		docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
+	$(COMPOSE) up --no-build --no-recreate -d $(SERVICES)
+	$(COMPOSE) exec -T gunicorn_vm python manage.py makemigrations
+	$(COMPOSE) exec -T gunicorn_vm python manage.py migrate
+	@if [ "$$MODE" = "production" ]; then \
+		$(COMPOSE) exec -T gunicorn_vm python manage.py collectstatic --noinput; \
 	fi
-	docker compose down
+	$(COMPOSE) down
+
+
+deploy:
+	@echo "========================================="
+	@echo " DEPLOY ACTUALIZANDO DESDE GITHUB"
+	@echo "========================================="
+
+	@git pull origin main
+
+	@echo ">>> Reconstruyendo contenedores..."
+	$(COMPOSE) build
+
+	@echo ">>> Levantando servicios..."
+	$(COMPOSE) up -d $(SERVICES)
+
+	@echo ">>> Aplicando migraciones..."
+	$(COMPOSE) exec -T gunicorn_vm python manage.py migrate
+
+	@echo ">>> Recolectando estáticos..."
+	@if [ "$$MODE" = "production" ]; then \
+		$(COMPOSE) exec -T gunicorn_vm python manage.py collectstatic --noinput; \
+	fi
+
+	@echo ">>> Reiniciando servicios web..."
+	$(COMPOSE) restart gunicorn_vm daphne_vm nginx_vm
+
+	@echo "========================================="
+	@echo " DEPLOY COMPLETADO"
+	@echo "========================================="
+
 
 stop:
-	docker compose stop
-	docker compose down
+	$(COMPOSE) stop
+	$(COMPOSE) down
+
 
 clean:
 	@echo "==============================================="
 	@echo " LIMPIEZA TOTAL (Docker + Proyecto + SSL)"
 	@echo "==============================================="
 
-	@echo ">>> Deteniendo y eliminando contenedores..."
+	@echo ">>> Deteniendo contenedores..."
 	- sudo docker compose down -v --remove-orphans
 
-	@echo ">>> Eliminando TODOS los recursos Docker..."
+	@echo ">>> Eliminando recursos Docker..."
 	- sudo docker system prune -a --volumes -f
 
-	@echo ">>> Eliminando redes Docker huérfanas..."
+	@echo ">>> Eliminando redes huérfanas..."
 	- sudo docker network prune -f
 
-	@echo ">>> Eliminando volúmenes Docker huérfanos..."
+	@echo ">>> Eliminando volúmenes huérfanos..."
 	- sudo docker volume prune -f
 
-	@echo ">>> Limpieza de migraciones Django..."
+	@echo ">>> Limpieza migraciones Django..."
 	find . -path "*/migrations/*.py" ! -name "__init__.py" -delete || true
 	find . -path "*/migrations/*.pyc" -delete || true
 	find . -path "*/migrations/__pycache__" -type d -exec rm -rf {} + || true
 
-	@echo ">>> Eliminando bases de datos locales..."
+	@echo ">>> Eliminando bases sqlite..."
 	find . -name "*.sqlite3" -delete || true
 
-	@echo ">>> Limpieza de caché Python..."
+	@echo ">>> Limpieza caché Python..."
 	find . -name "__pycache__" -type d -exec rm -rf {} + || true
 	find . -name "*.pyc" -delete || true
 	find . -name "*.pyo" -delete || true
 
-	@echo ">>> Eliminando estáticos y media..."
-	rm -rf iica_plataforma/staticfiles/*|| true
+	@echo ">>> Eliminando estáticos..."
+	rm -rf iica_plataforma/staticfiles/* || true
 	rm -rf iica_plataforma/media/profile_images/* || true
 
-	@echo ">>> Eliminando documentación generada..."
+	@echo ">>> Eliminando documentación..."
 	rm -rf docs/ || true
 
-	@echo ">>> Eliminando certificados Let's Encrypt locales..."
+	@echo ">>> Eliminando certificados locales..."
 	rm -rf letsencrypt/ || true
 
-	@echo ">>> Eliminando nginx.conf generado..."
+	@echo ">>> Eliminando nginx.conf..."
 	rm -f nginx.conf || true
 
-	@echo ">>> Eliminando dhparam.pem si fue creado por el proyecto..."
+	@echo ">>> Eliminando dhparam.pem..."
 	if [ -f /etc/ssl/certs/dhparam.pem ]; then \
 		echo "   - Borrando /etc/ssl/certs/dhparam.pem"; \
 		sudo rm -f /etc/ssl/certs/dhparam.pem; \
@@ -94,7 +132,7 @@ clean:
 	@echo " LIMPIEZA COMPLETA FINALIZADA"
 	@echo "==============================================="
 
+
 fix-docker-permissions:
 	@sudo usermod -aG docker $$(whoami)
 	@sudo chmod 666 /var/run/docker.sock
-
