@@ -4,6 +4,64 @@
 {% block content %}
 
 <style>
+    .quick-console{
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+
+        height:120px;
+
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(8px);
+
+        border-top:1px solid #ddd;
+
+        padding:10px 20px;
+
+        z-index:9999;
+    }
+
+    /* columnas */
+
+    .qc-left{
+        width:25%;
+    }
+
+    .qc-center{
+        width:50%;
+        text-align:center;
+    }
+
+    .qc-right{
+        width:25%;
+        text-align:right;
+    }
+
+    /* input crear tarea */
+
+    #quickTaskInput{
+        width:100%;
+        padding:8px;
+        border-radius:6px;
+        border:1px solid #ccc;
+    }
+
+    /* feed */
+
+    #taskFeed{
+        height:60px;
+        overflow:hidden;
+    }
+
+    .task-card{
+        padding:6px;
+        font-size:14px;
+    }
 
     /* ===== SIDEBAR ===== */
     .sidebar {
@@ -406,6 +464,45 @@
 </div>
 
 </div>
+</div>
+<div class="quick-console">
+
+    <!-- Crear tarea -->
+    <div class="qc-left">
+        <form id="quickTaskForm">
+            <input 
+                type="text"
+                id="quickTaskInput"
+                placeholder="Nueva tarea..."
+                required
+            >
+        </form>
+    </div>
+
+    <!-- Feed tareas -->
+    <div class="qc-center">
+        <button id="prevTask">⬆</button>
+
+        <div id="taskFeed">
+            <!-- tareas cargadas por JS -->
+        </div>
+
+        <button id="nextTask">⬇</button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="qc-right">
+
+        <select id="filterProject">
+            <option value="">Proyecto</option>
+        </select>
+
+        <select id="filterInitiative">
+            <option value="">Iniciativa</option>
+        </select>
+
+    </div>
+
 </div>
 
 

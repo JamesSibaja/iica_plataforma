@@ -36,8 +36,11 @@ PASSWORD=${password:? "La contraseña no puede estar vacía"}
 
 export MODE
 
-echo "MODE=$MODE" > .env
-echo "Dominio: $DOMAIN" > .env
+cat > .env <<EOF
+MODE=$MODE
+DOMAIN=$DOMAIN
+EMAIL=$EMAIL
+EOF
 
 echo "Modo: $MODE"
 echo "Dominio: $DOMAIN"

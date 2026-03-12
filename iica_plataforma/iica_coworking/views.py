@@ -1,6 +1,9 @@
 from django.shortcuts import render
 from datetime import timedelta
 from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from .models import Tarea
 
 from .models import (
     OKRObjetivo,
@@ -137,3 +140,23 @@ def okr_kanban(request):
         "iica_coworking/kanban.html",
         context
     )
+
+@require_GET
+def tareas_prioridad(request):
+
+    tareas = (
+        Tarea.objects
+        .order_by("-updated_at")[:20]
+        .values("id","titulo","proyecto__nombre")
+    )
+
+    data = []
+
+    for t in tareas:
+        data.append({
+            "id":t["id"],
+            "titulo":t["titulo"],
+            "proyecto":t["proyecto__nombre"]
+        })
+
+    return JsonResponse(data,safe=False)
