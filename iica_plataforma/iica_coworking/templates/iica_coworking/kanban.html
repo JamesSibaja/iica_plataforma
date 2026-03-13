@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block content %}
-
+<!-- <script src="{% static 'js/sortable.min.js' %}"></script> -->
 <style>
     .quick-console{
         position: fixed;
@@ -683,7 +683,9 @@ WEBSOCKET
 ========================= */
 
 const socket = new WebSocket(
-"ws://" + window.location.host + "/ws/kanban/"
+    (window.location.protocol === "https:" ? "wss://" : "ws://") +
+    window.location.host +
+    "/ws/kanban/"
 );
 
 
