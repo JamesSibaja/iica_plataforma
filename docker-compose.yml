@@ -2,6 +2,12 @@ services:
 
   db_vm:
     image: postgres:15
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       POSTGRES_DB: iica_plataforma_db
       POSTGRES_USER: postgres
@@ -13,10 +19,12 @@ services:
 
   redis_vm:
     image: redis:7
+    restart: unless-stopped
     networks:
       - mynetwork_vm
 
   gunicorn_vm:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile.gunicorn
@@ -34,6 +42,7 @@ services:
       - mynetwork_vm
 
   daphne_vm:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile.daphne
@@ -47,6 +56,7 @@ services:
       - mynetwork_vm
 
   celery_vm:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile.celery
@@ -59,6 +69,7 @@ services:
 
   nginx_vm:
     image: nginx:1.25
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
