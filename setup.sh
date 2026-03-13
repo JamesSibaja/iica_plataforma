@@ -215,6 +215,10 @@ if [[ "$MODE" == "production" ]]; then
     python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
 
     docker compose restart nginx_vm
+    
+    echo "Configurando actualización automática..."
+    chmod +x scripts/auto_update.sh
+    (crontab -l 2>/dev/null; echo "0 2 * * * scripts/auto_update.sh") | crontab -
 fi
 
 # -------------------------

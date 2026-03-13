@@ -14,9 +14,15 @@ urlpatterns = [
         views.okr_kanban,
         name="okr_kanban"
     ),
+    path(
+        "api/tareas/prioridad/",
+        views.tareas_prioridad,
+        name="tareas_prioridad"
+    ),
+    path(
+        "tarea/crear/",
+        views.tarea_crear,
+        name="tarea_kanban_crear"
+    ),
+
 ]
-path(
-    "api/tareas/prioridad/",
-    views.tareas_prioridad,
-    name="tareas_prioridad"
-),

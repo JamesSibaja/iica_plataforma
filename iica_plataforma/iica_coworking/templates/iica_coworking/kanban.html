@@ -10,7 +10,7 @@
         left: 0;
         right: 0;
 
-        height:120px;
+        height:140px;
 
         display:flex;
         justify-content:space-between;
@@ -32,14 +32,14 @@
         width:25%;
     }
 
-    .qc-center{
+    /* .qc-center{
         width:50%;
         text-align:center;
-    }
+    } */
 
     .qc-right{
         width:25%;
-        text-align:right;
+        /* text-align:right; */
     }
 
     /* input crear tarea */
@@ -53,9 +53,51 @@
 
     /* feed */
 
+    .qc-center{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:10px;
+    }
+
+    .feed-btn{
+        border:none;
+        background:#f1f3f5;
+        border-radius:6px;
+        width:32px;
+        height:32px;
+        cursor:pointer;
+        font-size:14px;
+    }
+
+    .feed-btn:hover{
+        background:#e2e6ea;
+    }
+
     #taskFeed{
+        width:260px;
         height:60px;
-        overflow:hidden;
+
+        display:flex;
+        align-items:center;
+        justify-content:center;
+
+        background:white;
+        border-radius:8px;
+
+        padding:8px 12px;
+
+        box-shadow:0 2px 6px rgba(0,0,0,.08);
+    }
+
+    .feed-task{
+        text-align:center;
+        line-height:1.2;
+    }
+
+    .feed-meta{
+        font-size:12px;
+        color:#777;
     }
 
     .task-card{
@@ -298,6 +340,22 @@
         justify-content: center;
         gap: 25px;
     }
+
+    .tarea-card{
+        position: relative;
+        padding-left: 12px;
+    }
+
+    .tarea-card::before{
+        content:"";
+        position:absolute;
+        left:0;
+        top:6px;
+        bottom:6px;
+        width:4px;
+        border-radius:3px;
+        background:var(--tag-color, #999);
+    }
     
     .btn-iica {
         padding: 14px 26px;
@@ -356,15 +414,20 @@
 
 <div class="card mb-2 tarea" data-id="{{ t.id }}">
 
-<div class="card-body">
 
-<strong>{{ t.titulo }}</strong>
 
-<div class="small text-muted">
-{{ t.iniciativa.nombre }}
+<div class="card-body tarea-card"
+     data-iniciativa="{{ t.iniciativa.id }}">
+
+    <strong>{{ t.titulo }}</strong>
+
+    <div class="small text-muted">
+        {{ t.iniciativa.nombre }}
+    </div>
+
 </div>
 
-</div>
+
 
 </div>
 
@@ -386,15 +449,20 @@
 
 <div class="card mb-2 tarea" data-id="{{ t.id }}">
 
-<div class="card-body">
 
-<strong>{{ t.titulo }}</strong>
 
-<div class="small text-muted">
-{{ t.iniciativa.nombre }}
+<div class="card-body tarea-card"
+     data-iniciativa="{{ t.iniciativa.id }}">
+
+    <strong>{{ t.titulo }}</strong>
+
+    <div class="small text-muted">
+        {{ t.iniciativa.nombre }}
+    </div>
+
 </div>
 
-</div>
+
 
 </div>
 
@@ -416,15 +484,19 @@
 
 <div class="card mb-2 tarea" data-id="{{ t.id }}">
 
-<div class="card-body">
 
-<strong>{{ t.titulo }}</strong>
+<div class="card-body tarea-card"
+     data-iniciativa="{{ t.iniciativa.id }}">
 
-<div class="small text-muted">
-{{ t.iniciativa.nombre }}
+    <strong>{{ t.titulo }}</strong>
+
+    <div class="small text-muted">
+        {{ t.iniciativa.nombre }}
+    </div>
+
 </div>
 
-</div>
+
 
 </div>
 
@@ -446,15 +518,20 @@
 
 <div class="card mb-2 tarea" data-id="{{ t.id }}">
 
-<div class="card-body">
 
-<strong>{{ t.titulo }}</strong>
 
-<div class="small text-muted">
-{{ t.iniciativa.nombre }}
+<div class="card-body tarea-card"
+     data-iniciativa="{{ t.iniciativa.id }}">
+
+    <strong>{{ t.titulo }}</strong>
+
+    <div class="small text-muted">
+        {{ t.iniciativa.nombre }}
+    </div>
+
 </div>
 
-</div>
+
 
 </div>
 
@@ -468,38 +545,131 @@
 <div class="quick-console">
 
     <!-- Crear tarea -->
+     
     <div class="qc-left">
-        <form id="quickTaskForm">
-            <input 
-                type="text"
-                id="quickTaskInput"
-                placeholder="Nueva tarea..."
-                required
-            >
-        </form>
+
+            <form method="post"
+                  action="{% url 'tarea_kanban_crear' %}">
+            
+            {% csrf_token %}
+            
+            <div class="row g-2 mb-2">
+            
+                <div class="col-4">
+                    <input type="text"
+                           name="titulo"
+                           class="form-control"
+                           placeholder="Título tarea"
+                           required>
+                </div>
+            
+                <div class="col-3">
+                    <select name="iniciativa"
+                            class="form-select"
+                            required>
+            
+                        <!-- <option value="">Iniciativa</option> -->
+            
+                        {% for i in iniciativas %}
+                            <option value="{{ i.id }}">
+                                {{ i.nombre }}
+                            </option>
+                        {% endfor %}
+            
+                    </select>
+                </div>
+            
+                <div class="col-3">
+                    <input type="date"
+                           name="fecha_limite"
+                           class="form-control">
+                </div>
+            
+                <div class="col-2 d-grid">
+                    <button class="btn btn-success">
+                        Añadir
+                    </button>
+                </div>
+            
+            </div>
+            
+            <textarea name="descripcion"
+                      class="form-control form-control-sm"
+                      rows="2"
+                      placeholder="Descripción (opcional)"></textarea>
+            
+            </form>
+            
     </div>
 
     <!-- Feed tareas -->
     <div class="qc-center">
-        <button id="prevTask">⬆</button>
 
-        <div id="taskFeed">
-            <!-- tareas cargadas por JS -->
-        </div>
-
-        <button id="nextTask">⬇</button>
+            <button class="feed-btn" id="prevTask">
+                ▲
+            </button>
+        
+            <div id="taskFeed">
+        
+                <div class="feed-task">
+                    <strong>Tarea destacada</strong>
+                    <div class="feed-meta">Iniciativa · Proyecto</div>
+                </div>
+        
+            </div>
+        
+            <button class="feed-btn" id="nextTask">
+                ▼
+            </button>
+        
+       
     </div>
 
     <!-- Filtros -->
     <div class="qc-right">
 
-        <select id="filterProject">
-            <option value="">Proyecto</option>
-        </select>
+        <div class="filter-box">
 
-        <select id="filterInitiative">
-            <option value="">Iniciativa</option>
-        </select>
+            <button class="btn btn-light btn-sm"
+                    onclick="toggleFilter('projectMenu')">
+            Proyecto ▾
+            </button>
+            
+            <div id="projectMenu" class="filter-menu">
+            
+            {% for p in proyectos %}
+            
+            <label>
+            <input type="checkbox"
+                   class="filter-project"
+                   value="{{ p.id }}">
+            {{ p.nombre }}
+            </label>
+            
+            {% endfor %}
+            
+            </div>
+            <button class="btn btn-light btn-sm"
+                    onclick="toggleFilter('projectMenu')">
+            Iniciativa ▾
+            </button>
+            
+            <div id="projectMenu" class="filter-menu">
+            
+            {% for p in iniciativas %}
+            
+            <label>
+            <input type="checkbox"
+                   class="filter-project"
+                   value="{{ p.id }}">
+            {{ p.nombre }}
+            </label>
+            
+            {% endfor %}
+            
+            </div>
+            
+            </div>
 
     </div>
 
@@ -570,6 +740,22 @@ columnas.forEach(col => {
         }
 
     });
+
+});
+
+function colorFromId(id){
+
+let hue = (id * 137.508) % 360; 
+return `hsl(${hue}, 55%, 45%)`;
+}
+
+document.querySelectorAll(".tarea-card").forEach(card => {
+
+let id = parseInt(card.dataset.iniciativa);
+
+let color = colorFromId(id);
+
+card.style.setProperty("--tag-color", color);
 
 });
 

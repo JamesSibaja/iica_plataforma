@@ -207,12 +207,12 @@ class Tarea(models.Model):
 
     # relación opcional con proyecto de SECAP
     proyecto = models.ForeignKey(
-    Proyecto,
-    on_delete=models.SET_NULL,
-    null=True,
-    blank=True,
-    related_name="tareas_kanban"
-)
+        Proyecto,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tareas_kanban"
+    )
 
     def __str__(self):
         return self.titulo

@@ -1,9 +1,15 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from datetime import timedelta
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
-from .models import Tarea
+from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.http import HttpResponseForbidden
+from django.views.decorators.http import require_POST
+from secap.models import Proyecto
 
 from .models import (
     OKRObjetivo,
@@ -125,10 +131,14 @@ def okr_kanban(request):
     tareas_espera = Tarea.objects.filter(estado="espera")
     tareas_terminadas = Tarea.objects.filter(estado="terminada")
 
+    iniciativas = OKRIniciativa.objects.all()
+    proyectos = Proyecto.objects.all()
+
     context = {
 
         "vista": "kanban",
-
+        "iniciativas": iniciativas,
+        "proyectos": proyectos,
         "tareas_pendientes": tareas_pendientes,
         "tareas_ejecucion": tareas_ejecucion,
         "tareas_espera": tareas_espera,
@@ -160,3 +170,33 @@ def tareas_prioridad(request):
         })
 
     return JsonResponse(data,safe=False)
+
+@login_required
+@transaction.atomic
+def tarea_crear(request):
+
+    if request.method == "POST":
+
+        iniciativa = get_object_or_404(
+            OKRIniciativa,
+            id=request.POST.get("iniciativa")
+        )
+
+        tarea = Tarea.objects.create(
+            titulo=request.POST.get("titulo"),
+            descripcion=request.POST.get("descripcion", ""),
+            iniciativa=iniciativa,
+            responsable=request.user,
+            fecha_limite=request.POST.get("fecha_limite") or None,
+            proyecto=request.POST.get("proyecto") or None,
+        )
+
+        # # redirección
+        # if iniciativa.proyecto:
+        #     return redirect(
+        #         "proyectos_ejecucion",
+        #         iniciativa.proyecto.id
+        #     )
+
+        # fallback si no hay proyecto
+        return redirect("okr_kanban")

@@ -2,7 +2,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "iRSsEHme2q/Xjlebviha16qiRlgxEb9VTi9ZS+n/+x2qrCQusOG1zOrL9fzyKU2q"
+SECRET_KEY = "XdUJWeq+DT8ckpYilv+2GM5fsC9ktXmV3BZZrYTx2tIiUmnkjSalfYqIX4lhRTiz"
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
@@ -22,10 +22,10 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'channels',
     'daphne',
+    'iica_coworking',
     'django_celery_results',
     'django.contrib.staticfiles',
     'secap',
-    'iica_coworking',
     'website_management',
 ]
 
