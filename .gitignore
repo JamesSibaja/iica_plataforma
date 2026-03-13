@@ -20,6 +20,7 @@ venv/
 # ======================
 .env
 local_settings.py
+iica_plataforma/iica_plataforma/settings.py
 
 # ======================
 # Media y static (generados)
@@ -40,7 +41,7 @@ iica_plataforma/staticfiles/*
 # Docker / Nginx
 # ======================
 letsencrypt/
-*/nginx.conf
+nginx.conf
 
 # ======================
 # Docs generados
