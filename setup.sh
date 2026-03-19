@@ -108,7 +108,7 @@ USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH") == "True"
 INSTALLED_APPS = [
 
     # Core Django
-    'daphne',  # 👈 DEBE IR ANTES DE staticfiles
+    'daphne',  
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -259,7 +259,7 @@ echo "Levantando contenedores..."
 if [ "$MODE" = "production" ]; then
   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 else
-  docker compose up -d --build
+  docker compose --env-file .env up -d --build
 fi
 
 # -------------------------
