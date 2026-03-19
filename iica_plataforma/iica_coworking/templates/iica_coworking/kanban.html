@@ -545,135 +545,57 @@
 <div class="quick-console">
 
     <!-- Crear tarea -->
-     
     <div class="qc-left">
 
-            <form method="post"
-                  action="{% url 'tarea_kanban_crear' %}">
-            
-            {% csrf_token %}
-            
-            <div class="row g-2 mb-2">
-            
-                <div class="col-4">
-                    <input type="text"
-                           name="titulo"
-                           class="form-control"
-                           placeholder="Título tarea"
-                           required>
-                </div>
-            
-                <div class="col-3">
-                    <select name="iniciativa"
-                            class="form-select"
-                            required>
-            
-                        <!-- <option value="">Iniciativa</option> -->
-            
-                        {% for i in iniciativas %}
-                            <option value="{{ i.id }}">
-                                {{ i.nombre }}
-                            </option>
-                        {% endfor %}
-            
-                    </select>
-                </div>
-            
-                <div class="col-3">
-                    <input type="date"
-                           name="fecha_limite"
-                           class="form-control">
-                </div>
-            
-                <div class="col-2 d-grid">
-                    <button class="btn btn-success">
-                        Añadir
-                    </button>
-                </div>
-            
-            </div>
-            
-            <textarea name="descripcion"
-                      class="form-control form-control-sm"
-                      rows="2"
-                      placeholder="Descripción (opcional)"></textarea>
-            
-            </form>
-            
-    </div>
+        <form method="post" action="{% url 'tarea_kanban_crear' %}">
+        {% csrf_token %}
 
-    <!-- Feed tareas -->
-    <div class="qc-center">
+        <div class="row g-2">
 
-            <button class="feed-btn" id="prevTask">
-                ▲
-            </button>
-        
-            <div id="taskFeed">
-        
-                <div class="feed-task">
-                    <strong>Tarea destacada</strong>
-                    <div class="feed-meta">Iniciativa · Proyecto</div>
-                </div>
-        
+            <div class="col-12 col-md-4">
+                <input type="text"
+                       name="titulo"
+                       class="form-control"
+                       placeholder="Título tarea"
+                       required>
             </div>
-        
-            <button class="feed-btn" id="nextTask">
-                ▼
-            </button>
-        
-       
-    </div>
 
-    <!-- Filtros -->
-    <div class="qc-right">
+            <div class="col-6 col-md-3">
+                <select name="iniciativa"
+                        class="form-select"
+                        required>
 
-        <div class="filter-box">
+                    {% for i in iniciativas %}
+                        <option value="{{ i.id }}">
+                            {{ i.nombre }}
+                        </option>
+                    {% endfor %}
 
-            <button class="btn btn-light btn-sm"
-                    onclick="toggleFilter('projectMenu')">
-            Proyecto ▾
-            </button>
-            
-            <div id="projectMenu" class="filter-menu">
-            
-            {% for p in proyectos %}
-            
-            <label>
-            <input type="checkbox"
-                   class="filter-project"
-                   value="{{ p.id }}">
-            {{ p.nombre }}
-            </label>
-            
-            {% endfor %}
-            
+                </select>
             </div>
-            <button class="btn btn-light btn-sm"
-                    onclick="toggleFilter('projectMenu')">
-            Iniciativa ▾
-            </button>
-            
-            <div id="projectMenu" class="filter-menu">
-            
-            {% for p in iniciativas %}
-            
-            <label>
-            <input type="checkbox"
-                   class="filter-project"
-                   value="{{ p.id }}">
-            {{ p.nombre }}
-            </label>
-            
-            {% endfor %}
-            
+
+            <div class="col-6 col-md-3">
+                <input type="date"
+                       name="fecha_limite"
+                       class="form-control">
             </div>
-            
+
+            <div class="col-12 col-md-2 d-grid">
+                <button class="btn btn-success">
+                    Añadir
+                </button>
             </div>
+
+        </div>
+
+        <textarea name="descripcion"
+                  class="form-control form-control-sm mt-2"
+                  rows="2"
+                  placeholder="Descripción (opcional)"></textarea>
+
+        </form>
 
     </div>
-
-</div>
 
 
 <script>

@@ -175,113 +175,133 @@
 
 <body>
 
-<!-- NAVBAR NUEVO IICA -->
-<nav class="navbar navbar-expand-md navbar-dark navbar-iica sticky-top">
-  <div class="container">
-      <a class="navbar-brand" href="{% url 'Inicio' %}">
-          <img src="{% static 'img/iica.png' %}" alt="IICA Logo"> 
-      </a>
-
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuIICA" >
-          <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="menuIICA">
-
-        <ul class="navbar-nav ms-auto align-items-center">
-
-            <!-- LINKS NORMALES -->
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'proyecto_menu' %}">SECAP</a>
-            </li>
-        
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'okr_kanban' %}">IICA Coworking CR</a>
-            </li>
-        
-            <li class="nav-item">
-                <a class="nav-link" href="#">IICA Colaborativa</a>
-            </li>
-        
-            <li class="nav-item">
-                <a class="nav-link" href="#">Hablemos a Tiempo</a>
-            </li>
-        
-            <!-- PERFIL USUARIO -->
-            <li class="nav-item dropdown ms-3">
-        
-                <a class="nav-link dropdown-toggle d-flex align-items-center"
-                   href="#"
-                   id="userMenu"
-                   role="button"
-                   data-bs-toggle="dropdown"
-                   aria-expanded="false">
-        
-                    {% if user.is_authenticated %}
-                        <img src="{{ user.userprofile.profile_image.url }}"
-                             class="rounded-circle me-2"
-                             width="43"
-                             height="43"
-                             style="object-fit: cover;">
-                        <span class="d-none d-md-inline">
-                            {{ user.first_name|default:user.username }}
-                        </span>
-                    {% else %}
-                        <i class="bi bi-person-circle fs-4"></i>
-                    {% endif %}
-                </a>
-        
-                <ul class="dropdown-menu dropdown-menu-end shadow">
-        
-                    {% if user.is_authenticated %}
-        
-                        <li class="dropdown-header text-muted">
-                            Sesión activa
-                        </li>
-        
-                        <li>
-                            <a class="dropdown-item" href="{% url 'edit_profile' %}">
-                                Editar perfil
-                            </a>
-                        </li>
-        
-                        <li>
-                            <a class="dropdown-item" href="{% url 'password' %}">
-                                Cambiar contraseña
-                            </a>
-                        </li>
-        
-                        <li><hr class="dropdown-divider"></li>
-        
-                        <li>
-                            <a class="dropdown-item text-danger" href="{% url 'Logout' %}">
-                                Cerrar sesión
-                            </a>
-                        </li>
-        
-                    {% else %}
-        
-                        <li>
-                            <a class="dropdown-item" href="{% url 'Login' %}">
-                                Iniciar sesión
-                            </a>
-                        </li>
-        
-                        <li>
-                            <a class="dropdown-item" href="{% url 'SignUp' %}">
-                                Crear cuenta
-                            </a>
-                        </li>
-        
-                    {% endif %}
-                </ul>
-            </li>
-        
-        </ul>
-        
+    <!-- NAVBAR NUEVO IICA -->
+    <nav class="navbar navbar-expand-md navbar-dark navbar-iica sticky-top">
+      <div class="container">
+          <a class="navbar-brand" href="{% url 'Inicio' %}">
+              <img src="{% static 'img/iica.png' %}" alt="IICA Logo"> 
+          </a>
+    
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuIICA">
+              <span class="navbar-toggler-icon"></span>
+          </button>
+    
+          <div class="collapse navbar-collapse" id="menuIICA">
+    
+            <ul class="navbar-nav ms-auto align-items-center">
+    
+                <!-- LINKS -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'proyecto_menu' %}">SECAP</a>
+                </li>
+    
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'okr_kanban' %}">IICA Coworking CR</a>
+                </li>
+    
+                <li class="nav-item">
+                    <a class="nav-link" href="#">IICA Colaborativa</a>
+                </li>
+    
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Hablemos a Tiempo</a>
+                </li>
+    
+                <!-- PERFIL -->
+                <li class="nav-item dropdown ms-3">
+    
+                    <a class="nav-link dropdown-toggle d-flex align-items-center"
+                       href="#"
+                       id="userMenu"
+                       role="button"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false">
+    
+                        {% if user.is_authenticated %}
+                            <img src="{{ user.userprofile.profile_image.url }}"
+                                 class="rounded-circle me-2"
+                                 width="43"
+                                 height="43"
+                                 style="object-fit: cover;">
+                            <span class="d-none d-md-inline">
+                                {{ user.first_name|default:user.username }}
+                            </span>
+                        {% else %}
+                            <i class="bi bi-person-circle fs-4"></i>
+                        {% endif %}
+                    </a>
+    
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+    
+                        {% if user.is_authenticated %}
+    
+                            <li class="dropdown-header text-muted">
+                                Sesión activa
+                            </li>
+    
+                            <li>
+                                <a class="dropdown-item" href="{% url 'edit_profile' %}">
+                                    Editar perfil
+                                </a>
+                            </li>
+    
+                            <!-- 🔥 SOLO SI NO MICROSOFT -->
+                            {% if not USE_MICROSOFT_AUTH %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'password' %}">
+                                    Cambiar contraseña
+                                </a>
+                            </li>
+                            {% endif %}
+    
+                            <li><hr class="dropdown-divider"></li>
+    
+                            <li>
+                                {% if USE_MICROSOFT_AUTH %}
+                                    <a class="dropdown-item text-danger" href="/accounts/logout/">
+                                        Cerrar sesión
+                                    </a>
+                                {% else %}
+                                    <a class="dropdown-item text-danger" href="{% url 'Logout' %}">
+                                        Cerrar sesión
+                                    </a>
+                                {% endif %}
+                            </li>
+    
+                        {% else %}
+    
+                            <!-- 🔥 LOGIN SEGÚN MODO -->
+                            <li>
+                                {% if USE_MICROSOFT_AUTH %}
+                                    <a class="dropdown-item" href="/accounts/login/">
+                                        Iniciar sesión con Microsoft
+                                    </a>
+                                {% else %}
+                                    <a class="dropdown-item" href="{% url 'Login' %}">
+                                        Iniciar sesión
+                                    </a>
+                                {% endif %}
+                            </li>
+    
+                            <!-- 🔥 SOLO SI NO MICROSOFT -->
+                            {% if not USE_MICROSOFT_AUTH %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'SignUp' %}">
+                                    Crear cuenta
+                                </a>
+                            </li>
+                            {% endif %}
+    
+                        {% endif %}
+    
+                    </ul>
+                </li>
+    
+            </ul>
+    
+          </div>
       </div>
-  </div>
-</nav>
+    </nav>
 
 
 <!-- CONTENIDO -->

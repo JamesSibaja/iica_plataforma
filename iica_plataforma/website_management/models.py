@@ -4,8 +4,20 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 class UserProfile(models.Model):
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    profile_image = models.ImageField(upload_to='profile_images/', default='default_profile_image.png',blank=True)
+
+    profile_image = models.ImageField(
+        upload_to='profile_images/',
+        default='default_profile_image.png',
+        blank=True
+    )
+
+    microsoft_oid = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return self.user.username

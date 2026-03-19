@@ -34,21 +34,46 @@ fi
 EMAIL=${email:-admin@localhost}
 PASSWORD=${password:? "La contraseña no puede estar vacía"}
 
-export MODE
+# -------------------------
+# GENERAR SECRETOS
+# -------------------------
+echo "Generando secretos seguros..."
+SECRET_KEY=$(openssl rand -base64 48)
+DB_PASSWORD=$(openssl rand -base64 32)
+
+# -------------------------
+# .ENV
+# -------------------------
+echo "Generando archivo .env..."
 
 cat > .env <<EOF
 MODE=$MODE
 DOMAIN=$DOMAIN
 EMAIL=$EMAIL
+DB_PASSWORD=$DB_PASSWORD
+
+USE_MICROSOFT_AUTH=False
+MICROSOFT_CLIENT_ID=
+MICROSOFT_CLIENT_SECRET=
 EOF
 
 echo "Modo: $MODE"
 echo "Dominio: $DOMAIN"
 
 # -------------------------
-# SECRET KEY
+# CONTEXT PROCESSOR
 # -------------------------
-SECRET_KEY=$(openssl rand -base64 48)
+echo "Creando context processor..."
+
+mkdir -p iica_plataforma/iica_plataforma
+
+cat > iica_plataforma/iica_plataforma/context_processors.py <<EOF
+def microsoft_flag(request):
+    from django.conf import settings
+    return {
+        'USE_MICROSOFT_AUTH': getattr(settings, 'USE_MICROSOFT_AUTH', False)
+    }
+EOF
 
 # -------------------------
 # DJANGO SETTINGS
@@ -57,6 +82,7 @@ echo "Generando settings.py..."
 
 cat > iica_plataforma/iica_plataforma/settings.py <<EOL
 from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -71,34 +97,72 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
+# -------------------------
+# MICROSOFT AUTH FLAG
+# -------------------------
+USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH") == "True"
+
+# -------------------------
+# APPS
+# -------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.humanize',
+    'django.contrib.staticfiles',
+    'django.contrib.sites',
     'channels',
     'daphne',
-    'iica_coworking',
     'django_celery_results',
-    'django.contrib.staticfiles',
+    'iica_coworking',
     'secap',
     'website_management',
 ]
 
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+if USE_MICROSOFT_AUTH:
+    INSTALLED_APPS += [
+        'allauth',
+        'allauth.account',
+        'allauth.socialaccount',
+        'allauth.socialaccount.providers.microsoft',
+    ]
+
+SITE_ID = 1
+
+# -------------------------
+# AUTH
+# -------------------------
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
-ROOT_URLCONF = 'iica_plataforma.urls'
+if USE_MICROSOFT_AUTH:
+    AUTHENTICATION_BACKENDS.append(
+        'allauth.account.auth_backends.AuthenticationBackend'
+    )
 
+# -------------------------
+# MICROSOFT CONFIG
+# -------------------------
+if USE_MICROSOFT_AUTH:
+    SOCIALACCOUNT_PROVIDERS = {
+        "microsoft": {
+            "APP": {
+                "client_id": os.getenv("MICROSOFT_CLIENT_ID"),
+                "secret": os.getenv("MICROSOFT_CLIENT_SECRET"),
+                "key": ""
+            }
+        }
+    }
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+
+# -------------------------
+# TEMPLATES (IMPORTANTE)
+# -------------------------
 TEMPLATES = [{
     'BACKEND': 'django.template.backends.django.DjangoTemplates',
     'DIRS': [],
@@ -106,27 +170,31 @@ TEMPLATES = [{
     'OPTIONS': {
         'context_processors': [
             'django.template.context_processors.debug',
-            'django.template.context_processors.request',
+            'django.template.context_processors.request',  # NECESARIO PARA ALLAUTH
             'django.contrib.auth.context_processors.auth',
             'django.contrib.messages.context_processors.messages',
+            'iica_plataforma.context_processors.microsoft_flag',
         ],
     },
 }]
 
-ASGI_APPLICATION = 'iica_plataforma.asgi.application'
-WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
-
+# -------------------------
+# DATABASE
+# -------------------------
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'iica_plataforma_db',
         'USER': 'postgres',
-        'PASSWORD': 'iicaPlat',
+        'PASSWORD': os.getenv("DB_PASSWORD"),
         'HOST': 'db_vm',
         'PORT': '5432',
     }
 }
 
+# -------------------------
+# RESTO
+# -------------------------
 LANGUAGE_CODE = 'es'
 TIME_ZONE = 'UTC'
 USE_I18N = True
@@ -156,41 +224,48 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 EOL
 
 # -------------------------
-# NGINX CONF (SIN SSL)
+# NGINX
 # -------------------------
 echo "Generando configuración inicial de Nginx..."
 python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN"
 
 # -------------------------
-# DOCKER COMPOSE UP
+# DOCKER UP
 # -------------------------
 echo "Levantando contenedores..."
 
 if [ "$MODE" = "production" ]; then
-  docker compose \
-    -f docker-compose.yml \
-    -f docker-compose.prod.yml \
-    up -d --build
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 else
   docker compose up -d --build
 fi
 
 # -------------------------
-# MIGRATIONS + STATIC
+# ESPERAR DB
 # -------------------------
-echo "Aplicando migraciones..."
-docker compose exec gunicorn_vm python manage.py makemigrations
-docker compose exec gunicorn_vm python manage.py migrate
+echo "Esperando base de datos..."
+sleep 5
 
+# -------------------------
+# MIGRACIONES
+# -------------------------
+docker compose exec -T gunicorn_vm python manage.py migrate
+
+# -------------------------
+# ALLAUTH AUTO
+# -------------------------
+docker compose exec -T gunicorn_vm python manage.py shell < scripts/setup_allauth.py || true
+
+# -------------------------
+# STATIC
+# -------------------------
 if [ "$MODE" = "production" ]; then
-    echo "Recolectando archivos estáticos..."
-    docker compose exec gunicorn_vm python manage.py collectstatic --noinput
+    docker compose exec -T gunicorn_vm python manage.py collectstatic --noinput
 fi
 
 # -------------------------
 # SUPERUSER
 # -------------------------
-echo "Creando superusuario..."
 docker compose run --rm \
   -e DJANGO_SUPERUSER_EMAIL="$EMAIL" \
   -e DJANGO_SUPERUSER_PASSWORD="$PASSWORD" \
@@ -198,45 +273,35 @@ docker compose run --rm \
   python /app/scripts/create_superuser.py
 
 # -------------------------
-# SSL (PRODUCCIÓN)
+# SSL
 # -------------------------
 if [[ "$MODE" == "production" ]]; then
 
+    echo "Configurando SSL..."
+
     if [[ ! -f /etc/ssl/certs/dhparam.pem ]]; then
-        echo "Generando dhparam.pem..."
         sudo mkdir -p /etc/ssl/certs
         sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
     fi
 
-    echo "Solicitando certificados SSL..."
     sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || echo "⚠️ SSL pendiente"
 
-    echo "Regenerando Nginx con SSL..."
     python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
-
     docker compose restart nginx_vm
-    
-    echo "Configurando actualización automática..."
+
+    echo "Configurando auto deploy..."
+
     chmod +x scripts/auto_update.sh
-    (crontab -l 2>/dev/null; echo "0 2 * * * scripts/auto_update.sh") | crontab -
+
+    CRON_JOB="0 2 * * * $(pwd)/scripts/auto_update.sh"
+    (crontab -l 2>/dev/null | grep -v auto_update.sh; echo "$CRON_JOB") | crontab -
 fi
 
 # -------------------------
-# PREPARACIÓN FINAL
+# AUTO-RESTART DOCKER
 # -------------------------
-
-    docker compose up --no-build --no-recreate -d redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
-	docker compose exec gunicorn_vm python manage.py makemigrations
-	docker compose exec gunicorn_vm python manage.py migrate
-	if [ "$$MODE" = "production" ]; then \
-		docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
-	fi
-	docker compose down
-
-    docker compose up --no-build -d --no-recreate redis_vm db_vm gunicorn_vm daphne_vm celery_vm nginx_vm
-	if [ "$$MODE" = "production" ]; then \
-		docker compose exec gunicorn_vm python manage.py collectstatic --noinput; \
-	fi
+echo "Configurando auto-restart..."
+docker update --restart unless-stopped $(docker ps -q) || true
 
 echo "========================================="
 echo " Setup finalizado correctamente "
