@@ -2,7 +2,8 @@ FROM python:3.10.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 # Dependencias del sistema (mínimas y necesarias)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-freefont-ttf \
@@ -25,11 +26,11 @@ COPY ./scripts /app/scripts
 
 ENV DJANGO_SETTINGS_MODULE=iica_plataforma.settings
 
-# collectstatic SOLO en build si es producción
-ARG MODE=development
-RUN if [ "$MODE" = "production" ]; then \
-    python manage.py collectstatic --noinput; \
-    fi
+# # collectstatic SOLO en build si es producción
+# ARG MODE=development
+# RUN if [ "$MODE" = "production" ]; then \
+#     python manage.py collectstatic --noinput; \
+#     fi
 
 EXPOSE 8765
 
