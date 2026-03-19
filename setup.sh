@@ -106,16 +106,23 @@ USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH") == "True"
 # APPS
 # -------------------------
 INSTALLED_APPS = [
+
+    # Core Django
+    'daphne',  # 👈 DEBE IR ANTES DE staticfiles
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
     'django.contrib.sites',
+
+    'django.contrib.staticfiles',
+
+    # Third-party
     'channels',
-    'daphne',
     'django_celery_results',
+
+    # Apps propias
     'iica_coworking',
     'secap',
     'website_management',
@@ -130,6 +137,21 @@ if USE_MICROSOFT_AUTH:
     ]
 
 SITE_ID = 1
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+
+    'django.contrib.sessions.middleware.SessionMiddleware',  
+
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+
+    'django.contrib.auth.middleware.AuthenticationMiddleware', 
+
+    'django.contrib.messages.middleware.MessageMiddleware',
+
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
 
 # -------------------------
 # AUTH
