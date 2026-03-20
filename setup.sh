@@ -17,12 +17,19 @@ echo
 # -------------------------
 # MODE
 # -------------------------
-if [[ "$mode" == "s" || "$mode" == "S" ]]; then
+if [[ "$mode" =~ ^[sS]$ ]]; then
     MODE="production"
     DEBUG=False
-    DOMAIN=${domain:? "En producción el dominio es obligatorio"}
-    ALLOWED_HOSTS="['$DOMAIN']"
-    CSRF_TRUSTED_ORIGINS="['https://$DOMAIN']"
+
+    if [[ -z "$domain" ]]; then
+        echo "❌ En producción el dominio es obligatorio"
+        exit 1
+    fi
+
+    DOMAIN="$domain"
+    ALLOWED_HOSTS="['$DOMAIN', 'www.$DOMAIN']"
+    CSRF_TRUSTED_ORIGINS="['https://$DOMAIN', 'https://www.$DOMAIN']"
+
 else
     MODE="development"
     DEBUG=True
@@ -32,14 +39,18 @@ else
 fi
 
 EMAIL=${email:-admin@localhost}
-PASSWORD=${password:? "La contraseña no puede estar vacía"}
+
+if [[ -z "$password" ]]; then
+    echo "❌ La contraseña no puede estar vacía"
+    exit 1
+fi
 
 # -------------------------
 # GENERAR SECRETOS
 # -------------------------
 echo "Generando secretos seguros..."
-SECRET_KEY=$(openssl rand -base64 48)
-DB_PASSWORD=$(openssl rand -base64 32)
+SECRET_KEY=$(openssl rand -base64 48 | tr -d '\n')
+DB_PASSWORD=$(openssl rand -base64 32 | tr -d '\n')
 
 # -------------------------
 # .ENV
@@ -51,6 +62,7 @@ MODE=$MODE
 DOMAIN=$DOMAIN
 EMAIL=$EMAIL
 DB_PASSWORD=$DB_PASSWORD
+SECRET_KEY=$SECRET_KEY
 
 USE_MICROSOFT_AUTH=False
 MICROSOFT_CLIENT_ID=
@@ -86,7 +98,7 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "$SECRET_KEY"
+SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = $DEBUG
 
 ALLOWED_HOSTS = $ALLOWED_HOSTS
@@ -102,32 +114,19 @@ ROOT_URLCONF = 'iica_plataforma.urls'
 WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
 ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 
-# -------------------------
-# MICROSOFT AUTH FLAG
-# -------------------------
 USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH") == "True"
 
-# -------------------------
-# APPS
-# -------------------------
 INSTALLED_APPS = [
-
-    # Core Django
-    'daphne',  
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.sites',
-
     'django.contrib.staticfiles',
-
-    # Third-party
     'channels',
     'django_celery_results',
-
-    # Apps propias
     'iica_coworking',
     'secap',
     'website_management',
@@ -145,22 +144,14 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-
-    'django.contrib.sessions.middleware.SessionMiddleware',  
-
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-
-    'django.contrib.auth.middleware.AuthenticationMiddleware', 
-
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# -------------------------
-# AUTH
-# -------------------------
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
@@ -170,9 +161,6 @@ if USE_MICROSOFT_AUTH:
         'allauth.account.auth_backends.AuthenticationBackend'
     )
 
-# -------------------------
-# MICROSOFT CONFIG
-# -------------------------
 if USE_MICROSOFT_AUTH:
     SOCIALACCOUNT_PROVIDERS = {
         "microsoft": {
@@ -187,17 +175,14 @@ if USE_MICROSOFT_AUTH:
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
-# -------------------------
-# TEMPLATES (IMPORTANTE)
-# -------------------------
 TEMPLATES = [{
     'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [],
+    'DIRS': [BASE_DIR / "templates"],  # 🔥 agregado importante
     'APP_DIRS': True,
     'OPTIONS': {
         'context_processors': [
             'django.template.context_processors.debug',
-            'django.template.context_processors.request',  # NECESARIO PARA ALLAUTH
+            'django.template.context_processors.request',
             'django.contrib.auth.context_processors.auth',
             'django.contrib.messages.context_processors.messages',
             'iica_plataforma.context_processors.microsoft_flag',
@@ -205,9 +190,6 @@ TEMPLATES = [{
     },
 }]
 
-# -------------------------
-# DATABASE
-# -------------------------
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -219,9 +201,6 @@ DATABASES = {
     }
 }
 
-# -------------------------
-# RESTO
-# -------------------------
 LANGUAGE_CODE = 'es'
 TIME_ZONE = 'UTC'
 USE_I18N = True
@@ -229,10 +208,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -253,13 +229,15 @@ EOL
 # -------------------------
 # NGINX
 # -------------------------
-echo "Generando configuración inicial de Nginx..."
+echo "Generando configuración de Nginx..."
 python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN"
 
 # -------------------------
 # DOCKER UP
 # -------------------------
 echo "Levantando contenedores..."
+
+docker compose down
 
 if [ "$MODE" = "production" ]; then
   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
@@ -268,21 +246,17 @@ else
 fi
 
 # -------------------------
-# ESPERAR DB
+# ESPERAR DB REAL
 # -------------------------
 echo "Esperando base de datos..."
-sleep 5
+until docker compose exec -T db_vm pg_isready -U postgres; do
+  sleep 2
+done
 
 # -------------------------
 # MIGRACIONES
 # -------------------------
-docker compose exec -T gunicorn_vm python manage.py makemigrations
-docker compose exec -T gunicorn_vm python manage.py migrate --run-syncdb
-
-# -------------------------
-# ALLAUTH AUTO
-# -------------------------
-docker compose exec -T gunicorn_vm python manage.py shell < scripts/setup_allauth.py || true
+docker compose exec -T gunicorn_vm python manage.py migrate --noinput
 
 # -------------------------
 # STATIC
@@ -298,31 +272,17 @@ docker compose run --rm \
   -e DJANGO_SUPERUSER_EMAIL="$EMAIL" \
   -e DJANGO_SUPERUSER_PASSWORD="$PASSWORD" \
   gunicorn_vm \
-  python /app/scripts/create_superuser.py
+  python /app/scripts/create_superuser.py || true
 
 # -------------------------
 # SSL
 # -------------------------
 if [[ "$MODE" == "production" ]]; then
-
     echo "Configurando SSL..."
-
-    if [[ ! -f /etc/ssl/certs/dhparam.pem ]]; then
-        sudo mkdir -p /etc/ssl/certs
-        sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
-    fi
-
     sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || echo "⚠️ SSL pendiente"
 
     python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
     docker compose restart nginx_vm
-
-    echo "Configurando auto deploy..."
-
-    chmod +x scripts/auto_update.sh
-
-    CRON_JOB="0 2 * * * $(pwd)/scripts/auto_update.sh"
-    (crontab -l 2>/dev/null | grep -v auto_update.sh; echo "$CRON_JOB") | crontab -
 fi
 
 # -------------------------
