@@ -271,7 +271,8 @@ sleep 5
 # -------------------------
 # MIGRACIONES
 # -------------------------
-docker compose exec -T gunicorn_vm python manage.py migrate
+docker compose exec -T gunicorn_vm python manage.py makemigrations
+docker compose exec -T gunicorn_vm python manage.py migrate --run-syncdb
 
 # -------------------------
 # ALLAUTH AUTO
