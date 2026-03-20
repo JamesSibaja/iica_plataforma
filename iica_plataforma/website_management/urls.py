@@ -2,7 +2,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth.decorators import login_required
-from website_management.views import home, edit_profile, edit_password, Login, logoutUsuario
+from website_management.views import home, edit_profile, edit_password, Login, logoutUsuario, SignUp
+
 
 urlpatterns = [
     path('', home, name="Inicio"),
