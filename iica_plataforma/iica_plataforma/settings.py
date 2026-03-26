@@ -1,8 +1,9 @@
 from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "GgOLgDqZa+Km5TL3bNFw0QJtt6JNhJp3mbk1evTPfKIKMSLc163VN3NkqgdlFwXj"
+SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
@@ -13,21 +14,39 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
+ROOT_URLCONF = 'iica_plataforma.urls'
+
+WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
+ASGI_APPLICATION = 'iica_plataforma.asgi.application'
+
+USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH") == "True"
+
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.humanize',
-    'channels',
-    'daphne',
-    'iica_coworking',
-    'django_celery_results',
+    'django.contrib.sites',
     'django.contrib.staticfiles',
+    'channels',
+    'django_celery_results',
+    'iica_coworking',
     'secap',
     'website_management',
 ]
+
+if USE_MICROSOFT_AUTH:
+    INSTALLED_APPS += [
+        'allauth',
+        'allauth.account',
+        'allauth.socialaccount',
+        'allauth.socialaccount.providers.microsoft',
+    ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -39,11 +58,32 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'iica_plataforma.urls'
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+if USE_MICROSOFT_AUTH:
+    AUTHENTICATION_BACKENDS.append(
+        'allauth.account.auth_backends.AuthenticationBackend'
+    )
+
+if USE_MICROSOFT_AUTH:
+    SOCIALACCOUNT_PROVIDERS = {
+        "microsoft": {
+            "APP": {
+                "client_id": os.getenv("MICROSOFT_CLIENT_ID"),
+                "secret": os.getenv("MICROSOFT_CLIENT_SECRET"),
+                "key": ""
+            }
+        }
+    }
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
 
 TEMPLATES = [{
     'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [],
+    'DIRS': [BASE_DIR / "templates"],  
     'APP_DIRS': True,
     'OPTIONS': {
         'context_processors': [
@@ -51,19 +91,17 @@ TEMPLATES = [{
             'django.template.context_processors.request',
             'django.contrib.auth.context_processors.auth',
             'django.contrib.messages.context_processors.messages',
+            'iica_plataforma.context_processors.microsoft_flag',
         ],
     },
 }]
-
-ASGI_APPLICATION = 'iica_plataforma.asgi.application'
-WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'iica_plataforma_db',
         'USER': 'postgres',
-        'PASSWORD': 'iicaPlat',
+        'PASSWORD': os.getenv("DB_PASSWORD"),
         'HOST': 'db_vm',
         'PORT': '5432',
     }
@@ -76,10 +114,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

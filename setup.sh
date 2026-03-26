@@ -39,6 +39,7 @@ else
 fi
 
 EMAIL=${email:-admin@localhost}
+PASSWORD="$password"
 
 if [[ -z "$password" ]]; then
     echo "❌ La contraseña no puede estar vacía"
@@ -49,8 +50,8 @@ fi
 # GENERAR SECRETOS
 # -------------------------
 echo "Generando secretos seguros..."
-SECRET_KEY=$(openssl rand -base64 48 | tr -d '\n')
-DB_PASSWORD=$(openssl rand -base64 32 | tr -d '\n')
+SECRET_KEY=$(openssl rand -base64 64 | tr -dc 'A-Za-z0-9' | head -c 48)
+DB_PASSWORD=$(openssl rand -base64 64 | tr -dc 'A-Za-z0-9' | head -c 32)
 
 # -------------------------
 # .ENV
@@ -61,6 +62,7 @@ cat > .env <<EOF
 MODE=$MODE
 DOMAIN=$DOMAIN
 EMAIL=$EMAIL
+PASSWORD=$PASSWORD=
 DB_PASSWORD=$DB_PASSWORD
 SECRET_KEY=$SECRET_KEY
 
@@ -123,6 +125,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.humanize',
     'django.contrib.sites',
     'django.contrib.staticfiles',
     'channels',
@@ -177,7 +180,7 @@ LOGOUT_REDIRECT_URL = "/"
 
 TEMPLATES = [{
     'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [BASE_DIR / "templates"],  # 🔥 agregado importante
+    'DIRS': [BASE_DIR / "templates"],  
     'APP_DIRS': True,
     'OPTIONS': {
         'context_processors': [
@@ -256,6 +259,7 @@ done
 # -------------------------
 # MIGRACIONES
 # -------------------------
+docker compose exec -T gunicorn_vm python manage.py makemigrations --noinput
 docker compose exec -T gunicorn_vm python manage.py migrate --noinput
 
 # -------------------------
@@ -268,11 +272,16 @@ fi
 # -------------------------
 # SUPERUSER
 # -------------------------
-docker compose run --rm \
-  -e DJANGO_SUPERUSER_EMAIL="$EMAIL" \
-  -e DJANGO_SUPERUSER_PASSWORD="$PASSWORD" \
-  gunicorn_vm \
-  python /app/scripts/create_superuser.py || true
+docker compose exec -T gunicorn_vm python manage.py shell <<EOF
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+if not User.objects.filter(is_superuser=True).exists():
+    User.objects.create_superuser("admin", "$EMAIL", "$PASSWORD")
+    print("Superusuario creado")
+else:
+    print("Ya existe un superusuario")
+EOF
 
 # -------------------------
 # SSL

@@ -19,6 +19,7 @@ if not getattr(settings, "USE_MICROSOFT_AUTH", False):
     urlpatterns += [
         path('accounts/login/', Login.as_view(), name="Login"),
         path('logout/', login_required(logoutUsuario), name="Logout"),
+        path('signup/', SignUp.as_view(), name='SignUp'),        
     ]
 
 # -------------------------
