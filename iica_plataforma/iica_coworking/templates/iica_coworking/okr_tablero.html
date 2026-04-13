@@ -264,16 +264,19 @@
 
 <ul class="nav nav-pills mb-4">
     <li class="nav-item">
-        <a class="nav-link {% if vista == 'kanban' %}active{% endif %}"
-            href="{% url 'okr_kanban' %}">
+        <a class="nav-link" href="{% url 'okr_kanban' %}">
             Kanban
-           
         </a>
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {% if vista == 'okr' %}active{% endif %}"
-            href="{% url 'okr_tablero' %}">
+        <a class="nav-link" href="{% url 'calendario' %}">
+            Calendario
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link active" href="{% url 'okr_tablero' %}">
             OKR
         </a>
     </li>

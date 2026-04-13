@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'website_management',
 ]
 
+
 if USE_MICROSOFT_AUTH:
     INSTALLED_APPS += [
         'allauth',
@@ -68,15 +69,34 @@ if USE_MICROSOFT_AUTH:
     )
 
 if USE_MICROSOFT_AUTH:
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1,
+        'allauth.account.middleware.AccountMiddleware'
+    )
+
+if USE_MICROSOFT_AUTH:
+    SOCIALACCOUNT_ADAPTER = "website_management.adapters.MicrosoftSocialAdapter"
     SOCIALACCOUNT_PROVIDERS = {
-        "microsoft": {
-            "APP": {
-                "client_id": os.getenv("MICROSOFT_CLIENT_ID"),
-                "secret": os.getenv("MICROSOFT_CLIENT_SECRET"),
-                "key": ""
-            }
-        }
+    "microsoft": {
+        "TENANT": os.getenv("MICROSOFT_TENANT_ID"),
+        "SCOPE": [
+            "openid",
+            "email",
+            "profile",
+            "User.Read",
+            "Calendars.ReadWrite",
+            "offline_access",
+        ],
+        "AUTH_PARAMS": {
+            "prompt": "select_account"
+        },
+        "APP": {
+            "client_id": os.getenv("MICROSOFT_CLIENT_ID"),
+            "secret": os.getenv("MICROSOFT_CLIENT_SECRET"),
+            "key": "",
+        },
     }
+}
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"

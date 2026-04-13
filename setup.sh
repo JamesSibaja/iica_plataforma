@@ -116,7 +116,7 @@ ROOT_URLCONF = 'iica_plataforma.urls'
 WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
 ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 
-USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH") == "True"
+USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH", "False").lower() == "true"
 
 INSTALLED_APPS = [
     'daphne',
@@ -134,6 +134,7 @@ INSTALLED_APPS = [
     'secap',
     'website_management',
 ]
+
 
 if USE_MICROSOFT_AUTH:
     INSTALLED_APPS += [
@@ -165,15 +166,34 @@ if USE_MICROSOFT_AUTH:
     )
 
 if USE_MICROSOFT_AUTH:
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1,
+        'allauth.account.middleware.AccountMiddleware'
+    )
+
+if USE_MICROSOFT_AUTH:
+    SOCIALACCOUNT_ADAPTER = "website_management.adapters.MicrosoftSocialAdapter"
     SOCIALACCOUNT_PROVIDERS = {
-        "microsoft": {
-            "APP": {
-                "client_id": os.getenv("MICROSOFT_CLIENT_ID"),
-                "secret": os.getenv("MICROSOFT_CLIENT_SECRET"),
-                "key": ""
-            }
-        }
+    "microsoft": {
+        "TENANT": os.getenv("MICROSOFT_TENANT_ID"),
+        "SCOPE": [
+            "openid",
+            "email",
+            "profile",
+            "User.Read",
+            "Calendars.ReadWrite",
+            "offline_access",
+        ],
+        "AUTH_PARAMS": {
+            "prompt": "select_account"
+        },
+        "APP": {
+            "client_id": os.getenv("MICROSOFT_CLIENT_ID"),
+            "secret": os.getenv("MICROSOFT_CLIENT_SECRET"),
+            "key": "",
+        },
     }
+}
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
@@ -255,6 +275,11 @@ echo "Esperando base de datos..."
 until docker compose exec -T db_vm pg_isready -U postgres; do
   sleep 2
 done
+
+echo "Esperando base de datos (PostgreSQL)..."
+
+
+echo "✅ PostgreSQL listo!"
 
 # -------------------------
 # MIGRACIONES

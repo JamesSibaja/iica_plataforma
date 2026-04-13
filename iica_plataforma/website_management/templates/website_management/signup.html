@@ -1,5 +1,6 @@
 {% extends "generica.html" %}
 {% load static %}
+{% load socialaccount %}
 {% block content %}
 
 <style>
@@ -68,19 +69,27 @@
 
         <!-- BODY -->
         <div class="signup-body">
+
+            {% if USE_MICROSOFT_AUTH %}
+            <a class="btn btn-primary btn-lg w-100"
+               href="{% provider_login_url 'microsoft' %}">
+               Iniciar sesión con Microsoft
+            </a>
+        
+            <hr class="my-4">
+            {% endif %}
+        
             <form method="POST">
                 {% csrf_token %}
-                <a class="btn btn-primary btn-lg w-100"
-                    href="{% provider_login_url 'microsoft' %}">
-                    Iniciar sesión con Microsoft
-                </a>
-
-                <!-- <div class="d-grid mt-4">
+                {{ form.as_p }}
+        
+                <div class="d-grid mt-4">
                     <button type="submit" class="btn btn-success btn-lg">
                         Registrarme
                     </button>
-                </div> -->
+                </div>
             </form>
+        
         </div>
 
         <!-- FOOTER -->

@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from .services import get_calendar_events
 
 from .forms import LoginForm, CreateUserForm, CustomUserChangeForm
 
@@ -61,23 +62,30 @@ def logoutUsuario(request):
     return redirect("/accounts/login/")
 
 
-# =========================
-# SIGNUP (SOLO SI NO MICROSOFT)
-# =========================
 class SignUp(generic.CreateView):
     template_name = "website_management/signup.html"
     model = User
     form_class = CreateUserForm
     success_url = reverse_lazy('Login')
 
-    def dispatch(self, request, *args, **kwargs):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["USE_MICROSOFT_AUTH"] = settings.USE_MICROSOFT_AUTH
+        return context
 
-        # 🔥 Si Microsoft activo → bloquear signup local
-        if getattr(settings, "USE_MICROSOFT_AUTH", False):
-            return redirect("/accounts/login/")
+def microsoft_calendar_view(request):
+    token = request.session.get("microsoft_access_token")
 
-        return super().dispatch(request, *args, **kwargs)
+    if not token:
+        return redirect("Login")
 
+    events = get_calendar_events(token)
+
+    return render(
+        request,
+        "website_management/calendar.html",
+        {"events": events}
+    )
 
 # =========================
 # EDIT PROFILE

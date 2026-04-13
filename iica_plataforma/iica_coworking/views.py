@@ -200,3 +200,20 @@ def tarea_crear(request):
 
         # fallback si no hay proyecto
         return redirect("okr_kanban")
+    
+def calendario(request):
+
+    dias = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]
+
+    horas = [f"{h}:00" for h in range(8, 19)]
+
+    eventos = [
+        {"titulo":"Reunión", "dia":"Lun", "hora":"10:00"},
+        {"titulo":"Entrega", "dia":"Mié", "hora":"14:00"},
+    ]
+
+    return render(request, "iica_coworking/calendar.html", {
+        "dias": dias,
+        "horas": horas,
+        "eventos": eventos
+    })

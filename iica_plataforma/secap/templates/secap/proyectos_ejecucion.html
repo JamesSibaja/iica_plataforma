@@ -5,6 +5,52 @@
 
 <style>
 
+.titulo-proyecto {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--iica-azul);
+    line-height: 1;
+}
+
+/* BADGES MÁS FINOS */
+.badge-proyecto {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+/* Colores más sutiles (no Bootstrap default) */
+.badge-responsable {
+    background: rgba(0, 88, 156, 0.1);
+    color: var(--iica-azul);
+}
+
+.badge-comite {
+    background: rgba(108, 117, 125, 0.15);
+    color: #555;
+}
+
+/* NAV COMPACTO */
+.nav-proyecto .nav-link {
+    font-weight: 600;
+    color: var(--iica-azul);
+    border-radius: 8px;
+    padding: 6px 14px;
+}
+
+.nav-proyecto .nav-link.active {
+    background: var(--iica-azul);
+    color: white;
+}
+
+.nav-proyecto .nav-link:hover {
+    background: rgba(0,88,156,0.08);
+}
+
+
+
+
 /* ===== SIDEBAR ===== */
 .sidebar {
     background: white;
@@ -144,12 +190,12 @@
 }
 
 /* ===== TITULO ===== */
-.titulo-proyecto {
+/* .titulo-proyecto {
     font-size: 1.8rem;
     font-weight: 800;
     color: var(--iica-azul);
     margin-bottom: 25px;
-}
+} */
 
 /* ===== TABLA ===== */
 .tabla-indicadores {
@@ -266,6 +312,7 @@
             <div class="sidebar">
 
                 <h3>Proyectos</h3>
+                
 
                 <!-- ===== TABS ===== -->
                 <ul class="nav nav-pills nav-fill mb-3" id="tabs-proyectos" role="tablist">
@@ -355,18 +402,56 @@
 
             {% if proyecto_sel %}
 
-                <div class="titulo-proyecto">
-                    {{ proyecto_sel.proyecto.nombre }}
+            <div class="proyecto-header d-flex justify-content-between align-items-center mb-3 flex-wrap">
+
+                <!-- IZQUIERDA: título + rol -->
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+            
+                    <div class="titulo-proyecto mb-0">
+                        {{ proyecto_sel.proyecto.nombre }}
+                    </div>
+            
                     {% if es_comite %}
-                        <span class="badge bg-light text-secondary border">
-                            Vista comité
+                        <span class="badge badge-proyecto badge-comite">
+                            Comité
                         </span>
                     {% elif es_encargado %}
-                        <span class="badge bg-light text-primary border">
+                        <span class="badge badge-proyecto badge-responsable">
                             Responsable
                         </span>
                     {% endif %}
+            
                 </div>
+            
+                <!-- DERECHA: tabs -->
+                <ul class="nav nav-pills nav-proyecto mb-0">
+            
+                    <li class="nav-item">
+                        <button class="nav-link active"
+                                data-bs-toggle="pill"
+                                data-bs-target="#seguimiento">
+                            Seguimiento
+                        </button>
+                    </li>
+            
+                    <li class="nav-item">
+                        <button class="nav-link"
+                                data-bs-toggle="pill"
+                                data-bs-target="#ficha">
+                            Ficha técnica
+                        </button>
+                    </li>
+            
+                </ul>
+            
+            </div>
+                
+
+                <div class="tab-content">
+
+                    <!-- ================= SEGUIMIENTO ================= -->
+                    <div class="tab-pane fade show active" id="seguimiento">
+                    
 
                 <div class="row g-4">
 
@@ -484,6 +569,83 @@
                     </div>
 
                 </div>
+
+                    <!-- TODO tu contenido actual (tabla + panel) -->
+                </div>
+
+                <div class="tab-pane fade" id="ficha">
+
+                    <div class="row g-4">
+                
+                        <!-- IZQUIERDA -->
+                        <div class="col-md-6">
+                
+                            <div class="panel-lateral">
+                                <h5 class="fw-bold mb-3">Información general</h5>
+                
+                                <p><strong>Descripción:</strong><br>
+                                {{ proyecto_sel.proyecto.descripcion|default:"-" }}</p>
+                
+                                <p><strong>Contraparte:</strong><br>
+                                {{ proyecto_sel.proyecto.contraparte|default:"-" }}</p>
+                
+                                <p><strong>Encargado:</strong><br>
+                                {{ proyecto_sel.proyecto.encargado.username }}</p>
+                
+                            </div>
+                
+                        </div>
+                
+                        <!-- DERECHA -->
+                        <div class="col-md-6">
+                
+                            <div class="panel-lateral">
+                                <h5 class="fw-bold mb-3">Fechas y planificación</h5>
+                
+                                <p><strong>Inicio:</strong>
+                                {{ proyecto_sel.proyecto.fecha_inicio|date:"d M Y"|default:"-" }}</p>
+                
+                                <p><strong>Fin:</strong>
+                                {{ proyecto_sel.proyecto.fecha_fin|date:"d M Y"|default:"-" }}</p>
+                
+                                <p><strong>Duración:</strong>
+                                {{ proyecto_sel.proyecto.duracion_dias|default:"-" }} días</p>
+                
+                            </div>
+                
+                        </div>
+                
+                        <!-- OBJETIVOS -->
+                        <div class="col-md-12">
+                
+                            <div class="panel-lateral">
+                                <h5 class="fw-bold mb-3">Objetivo general</h5>
+                
+                                <p>
+                                    {{ proyecto_sel.proyecto.objetivo_general|default:"No definido" }}
+                                </p>
+                            </div>
+                
+                        </div>
+                
+                        <!-- FINANCIERO -->
+                        <div class="col-md-12">
+                
+                            <div class="panel-lateral">
+                                <h5 class="fw-bold mb-3">Información financiera</h5>
+                
+                                <p><strong>Monto total:</strong>
+                                $ {{ proyecto_sel.proyecto.monto|floatformat:0 }}</p>
+                
+                            </div>
+                
+                        </div>
+                
+                    </div>
+                
+                </div>
+                
+            </div>
 
             {% else %}
                 <div class="alert alert-secondary text-center">

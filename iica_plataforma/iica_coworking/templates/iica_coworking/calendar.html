@@ -1,0 +1,165 @@
+{% extends "generica.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+
+.calendario-container{
+    background: var(--gris-fondo);
+    padding: 30px;
+    border-radius: 16px;
+}
+
+/* HEADER */
+.cal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.cal-header h3{
+    font-weight:800;
+    color:var(--iica-azul);
+}
+
+/* GRID */
+.cal-grid{
+    display:grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    background:white;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 4px 14px rgba(0,0,0,.12);
+}
+
+/* CELDAS */
+.cal-cell{
+    border:1px solid #eee;
+    min-height:80px;
+    position:relative;
+}
+
+/* HORAS */
+.cal-hour{
+    font-size:12px;
+    text-align:center;
+    padding-top:10px;
+    color:#777;
+}
+
+/* HEADER DIAS */
+.cal-day-header{
+    background:var(--iica-azul);
+    color:white;
+    text-align:center;
+    padding:10px;
+    font-weight:600;
+}
+
+/* EVENTOS */
+.evento{
+    position:absolute;
+    top:5px;
+    left:5px;
+    right:5px;
+
+    background:var(--iica-verde);
+    color:white;
+    padding:6px;
+    border-radius:6px;
+
+    font-size:12px;
+    cursor:pointer;
+}
+
+.evento:hover{
+    opacity:0.9;
+}
+
+</style>
+
+<div class="main-container">
+
+<!-- TABS -->
+<ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'okr_kanban' %}">
+            Kanban
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link active" href="{% url 'calendario' %}">
+            Calendario
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'okr_tablero' %}">
+            OKR
+        </a>
+    </li>
+</ul>
+
+<div class="calendario-container">
+
+<!-- HEADER -->
+<div class="cal-header">
+    <button class="btn btn-outline-primary">← Semana</button>
+    <h3>Semana actual</h3>
+    <button class="btn btn-outline-primary">Semana →</button>
+</div>
+
+<!-- GRID -->
+<div class="cal-grid">
+
+    <!-- HEADER VACÍO -->
+    <div></div>
+
+    <!-- DÍAS -->
+    {% for d in dias %}
+        <div class="cal-day-header">
+            {{ d }}
+        </div>
+    {% endfor %}
+
+    <!-- HORAS -->
+    {% for h in horas %}
+
+        <!-- COLUMNA HORA -->
+        <div class="cal-cell cal-hour">
+            {{ h }}
+        </div>
+
+        <!-- CELDAS POR DÍA -->
+        {% for d in dias %}
+
+            <div class="cal-cell">
+
+                {% for evento in eventos %}
+
+                    {% if evento.dia == d and evento.hora == h %}
+
+                        <div class="evento">
+                            {{ evento.titulo }}
+                        </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+        {% endfor %}
+
+    {% endfor %}
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}

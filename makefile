@@ -113,22 +113,18 @@ enable-microsoft:
 
 	@read -p "Client ID: " cid; \
 	read -p "Client Secret: " secret; \
+	read -p "Tenant ID: " tid; \
 	sed -i '/USE_MICROSOFT_AUTH/d' .env; \
 	sed -i '/MICROSOFT_CLIENT_ID/d' .env; \
 	sed -i '/MICROSOFT_CLIENT_SECRET/d' .env; \
+	sed -i '/MICROSOFT_TENANT_ID/d' .env; \
 	echo "USE_MICROSOFT_AUTH=True" >> .env; \
 	echo "MICROSOFT_CLIENT_ID=$$cid" >> .env; \
-	echo "MICROSOFT_CLIENT_SECRET=$$secret" >> .env;
+	echo "MICROSOFT_CLIENT_SECRET=$$secret" >> .env; \
+	echo "MICROSOFT_TENANT_ID=$$tid" >> .env;
 
-	@echo ">>> Aplicando configuración en Django..."
-	$(COMPOSE) exec -T gunicorn_vm python manage.py shell < scripts/setup_allauth.py
-
-	@echo ">>> Reiniciando servicios..."
-	$(COMPOSE) restart
-
-	@echo "========================================="
-	@echo " MICROSOFT AUTH ACTIVADO"
-	@echo "========================================="
+	docker compose down
+	docker compose --env-file .env up -d --build
 
 
 # =========================

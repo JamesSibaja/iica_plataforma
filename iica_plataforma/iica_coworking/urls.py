@@ -24,5 +24,10 @@ urlpatterns = [
         views.tarea_crear,
         name="tarea_kanban_crear"
     ),
+    path(
+        "okr/calendario/",
+        views.calendario,
+        name="calendario"
+    ),
 
 ]

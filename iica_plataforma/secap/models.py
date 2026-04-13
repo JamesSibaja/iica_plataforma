@@ -7,15 +7,39 @@ from django.contrib.auth.models import User
 class Proyecto(models.Model):
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField(blank=True)
+
+    # EXISTENTE
     fecha_creacion = models.DateField(auto_now_add=True)
     encargado = models.ForeignKey(User, on_delete=models.CASCADE, related_name="proyectos_encargado")
-    monto =  models.IntegerField(default=0) 
-    # Comité: relación muchos a muchos pero controlada por tabla intermedia
-    comite = models.ManyToManyField(User, through="MiembroComite", related_name="proyectos_comite")
+    monto = models.IntegerField(default=0)
+
+    # ===== NUEVO (FICHA TÉCNICA) =====
+    contraparte = models.CharField(max_length=255, blank=True)
+    pais = models.CharField(max_length=100, blank=True)
+
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_fin = models.DateField(null=True, blank=True)
+
+    objetivo_general = models.TextField(blank=True)
+    objetivos_especificos = models.TextField(blank=True)
+
+    estado = models.CharField(
+        max_length=50,
+        choices=[
+            ("formulacion", "Formulación"),
+            ("ejecucion", "Ejecución"),
+            ("cerrado", "Cerrado"),
+        ],
+        default="formulacion"
+    )
+
+    presupuesto_aprobado = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+
+    # FUTURO
+    # carpeta_sharepoint = models.URLField(blank=True)
 
     def __str__(self):
         return self.nombre
-
 
 # -------------------------------------------------------
 # COMITÉ ASOCIADO AL PROYECTO (TABLA INTERMEDIA)
