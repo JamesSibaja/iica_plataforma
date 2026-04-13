@@ -53,3 +53,6 @@ iica_plataforma/docs/
 # ======================
 .DS_Store
 Thumbs.db
+
+.env
+*.env
