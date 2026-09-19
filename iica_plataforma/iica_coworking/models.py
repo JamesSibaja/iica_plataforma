@@ -1,6 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
 from secap.models import Proyecto
+from django.utils import timezone
+from datetime import time
+from secap.models import Proyecto
+
 
 
 # -------------------------------------------------------
@@ -216,3 +220,52 @@ class Tarea(models.Model):
 
     def __str__(self):
         return self.titulo
+
+# =========================
+# CALENDARIO
+# =========================
+
+class EventoCalendario(models.Model):
+
+    CATEGORIAS = [
+        ("teletrabajo", "Teletrabajo"),
+        ("territorio", "En territorio"),
+        ("reunion", "Reunión"),
+        ("no_disponible", "No disponible"),
+    ]
+
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="eventos_calendario"
+    )
+
+    titulo = models.CharField(max_length=200)
+
+    detalle = models.TextField(blank=True)
+
+    fecha = models.DateField(
+        default=timezone.localdate
+    )
+
+    hora_inicio = models.TimeField(
+        default=time(8, 0)
+    )
+
+    hora_fin = models.TimeField(
+        default=time(17, 0)
+    )
+
+    categoria = models.CharField(
+        max_length=30,
+        choices=CATEGORIAS,
+        default="reunion"
+    )
+
+    ubicacion = models.CharField(
+        max_length=200,
+        blank=True
+    )
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.titulo}"

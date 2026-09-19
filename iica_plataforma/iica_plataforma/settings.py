@@ -19,7 +19,7 @@ ROOT_URLCONF = 'iica_plataforma.urls'
 WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
 ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 
-USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH") == "True"
+USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH", "False").lower() == "true"
 
 INSTALLED_APPS = [
     'daphne',

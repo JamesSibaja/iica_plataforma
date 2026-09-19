@@ -4,13 +4,16 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.utils import ProgrammingError
 
-class UserProfile(models.Model):
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE
+    )
 
     profile_image = models.ImageField(
-        upload_to='profile_images/',
-        default='default_profile_image.png',
+        upload_to="profile_images/",
+        default="default_profile_image.png",
         blank=True
     )
 
@@ -23,6 +26,7 @@ class UserProfile(models.Model):
     def __str__(self):
         return self.user.username
 
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -31,12 +35,49 @@ def create_user_profile(sender, instance, created, **kwargs):
         except ProgrammingError:
             pass
 
+
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    instance.userprofile.save()
+    if hasattr(instance, "userprofile"):
+        instance.userprofile.save()
+
 
 class MicrosoftToken(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    access_token = models.TextField()
-    refresh_token = models.TextField(null=True, blank=True)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE
+    )
 
+    access_token = models.TextField()
+
+    refresh_token = models.TextField(
+        null=True,
+        blank=True
+    )
+
+
+class PerfilMicrosoft(models.Model):
+    usuario = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="perfil_microsoft"
+    )
+
+    microsoft_id = models.CharField(
+        max_length=255,
+        unique=True
+    )
+
+    email = models.EmailField()
+
+    access_token = models.TextField(blank=True)
+
+    refresh_token = models.TextField(blank=True)
+
+    ultimo_sync = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    def __str__(self):
+        return self.usuario.username

@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from datetime import timedelta
+from datetime import timedelta, datetime, date
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
@@ -10,13 +10,118 @@ from django.db import transaction
 from django.http import HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from secap.models import Proyecto
+from .services import sync_microsoft_events
+from .service.microsoft import sincronizar_eventos
 
 from .models import (
     OKRObjetivo,
     OKRResultadoClave,
     OKRIniciativa,
-    Tarea
+    Tarea,
+    EventoCalendario
 )
+
+@login_required
+def calendario(request):
+
+    if request.user.is_authenticated:
+        try:
+            perfil = request.user.perfilmicrosoft
+            sincronizar_eventos(perfil)  # 👈 AQUÍ
+        except:
+            pass
+
+
+    fecha_str = request.GET.get("fecha")
+     # 🔥 SINCRONIZA ANTES DE MOSTRAR
+    sync_microsoft_events(request.user)
+
+    hoy = timezone.localdate()
+    if fecha_str:
+        fecha_actual = datetime.strptime(
+            fecha_str,
+            "%Y-%m-%d"
+        ).date()
+    else:
+        fecha_actual = hoy
+
+    inicio_semana = fecha_actual - timedelta(
+        days=fecha_actual.weekday()
+    )
+
+    nombres = [
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sábado",
+        "Domingo"
+    ]
+
+    dias_semana = []
+
+    for i in range(7):
+        dia = inicio_semana + timedelta(days=i)
+
+        dias_semana.append({
+            "fecha": dia,
+            "nombre": nombres[i],
+            "activo": dia == fecha_actual
+        })
+
+    usuarios = User.objects.filter(
+        is_active=True
+    ).order_by("first_name", "username")
+
+    eventos_db = EventoCalendario.objects.filter(
+        fecha=fecha_actual
+    ).select_related("usuario")
+
+    horas = list(range(8, 18))
+
+    JORNADA_INICIO = 8
+    JORNADA_FIN = 18
+    TOTAL_HORAS = JORNADA_FIN - JORNADA_INICIO
+
+    eventos = []
+
+    for ev in eventos_db:
+
+        inicio_decimal = ev.hora_inicio.hour + ev.hora_inicio.minute / 60
+        fin_decimal = ev.hora_fin.hour + ev.hora_fin.minute / 60
+
+        # clamp (evita que se rompa el layout)
+        inicio_decimal = max(inicio_decimal, JORNADA_INICIO)
+        fin_decimal = min(fin_decimal, JORNADA_FIN)
+
+        left = ((inicio_decimal - JORNADA_INICIO) / TOTAL_HORAS) * 100
+        width = ((fin_decimal - inicio_decimal) / TOTAL_HORAS) * 100
+
+        eventos.append({
+            "usuario_id": ev.usuario.id,
+            "usuario": ev.usuario.get_full_name() or ev.usuario.username,
+            "titulo": ev.titulo,
+            "detalle": ev.detalle,
+            "categoria": ev.categoria,
+            "ubicacion": ev.ubicacion,
+            "hora_inicio": ev.hora_inicio.strftime("%H:%M"),
+            "hora_fin": ev.hora_fin.strftime("%H:%M"),
+            "left": f"{left:.2f}",
+            "width": f"{max(width, 2):.2f}", # mínimo visible
+        })
+
+    return render(
+        request,
+        "iica_coworking/calendar.html",
+        {
+            "usuarios": usuarios,
+            "eventos": eventos,
+            "dias_semana": dias_semana,
+            "fecha_actual": fecha_actual,
+            "horas": horas
+        }
+    )
 
 
 # =====================================================
@@ -190,30 +295,5 @@ def tarea_crear(request):
             fecha_limite=request.POST.get("fecha_limite") or None,
             proyecto=request.POST.get("proyecto") or None,
         )
-
-        # # redirección
-        # if iniciativa.proyecto:
-        #     return redirect(
-        #         "proyectos_ejecucion",
-        #         iniciativa.proyecto.id
-        #     )
-
-        # fallback si no hay proyecto
         return redirect("okr_kanban")
     
-def calendario(request):
-
-    dias = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]
-
-    horas = [f"{h}:00" for h in range(8, 19)]
-
-    eventos = [
-        {"titulo":"Reunión", "dia":"Lun", "hora":"10:00"},
-        {"titulo":"Entrega", "dia":"Mié", "hora":"14:00"},
-    ]
-
-    return render(request, "iica_coworking/calendar.html", {
-        "dias": dias,
-        "horas": horas,
-        "eventos": eventos
-    })

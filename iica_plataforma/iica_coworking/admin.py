@@ -4,7 +4,8 @@ from .models import (
     OKRResultadoClave,
     OKRActualizacion,
     OKRIniciativa,
-    Tarea
+    Tarea,
+    EventoCalendario,
 )
 
 
@@ -35,7 +36,23 @@ class TareaInline(admin.TabularInline):
         "responsable",
         "estado",
         "fecha_limite",
-        "proyecto"
+        "proyecto",
+    )
+
+
+# =============================
+# EVENTOS INLINE (CALENDARIO)
+# =============================
+class EventoCalendarioInline(admin.TabularInline):
+    model = EventoCalendario
+    extra = 1
+    fields = (
+        "titulo",
+        "fecha",
+        "hora_inicio",
+        "hora_fin",
+        "categoria",
+        "ubicacion",
     )
 
 
@@ -59,6 +76,8 @@ class OKRResultadoClaveAdmin(admin.ModelAdmin):
 
     inlines = [OKRActualizacionInline]
 
+    autocomplete_fields = ("objetivo",)
+
     def progreso_porcentaje(self, obj):
         return f"{obj.progreso():.1f}%"
 
@@ -80,16 +99,18 @@ class OKRObjetivoAdmin(admin.ModelAdmin):
 
     list_filter = (
         "responsable",
-        "fecha_inicio"
+        "fecha_inicio",
     )
 
     search_fields = (
         "titulo",
-        "descripcion"
+        "descripcion",
     )
 
+    autocomplete_fields = ("responsable",)
+
     inlines = [
-        OKRResultadoClaveInline
+        OKRResultadoClaveInline,
     ]
 
 
@@ -102,10 +123,14 @@ class OKRActualizacionAdmin(admin.ModelAdmin):
     list_display = (
         "resultado",
         "fecha",
-        "valor"
+        "valor",
     )
 
     list_filter = ("fecha",)
+
+    search_fields = ("resultado__descripcion",)
+
+    autocomplete_fields = ("resultado",)
 
 
 # =============================
@@ -119,37 +144,42 @@ class OKRIniciativaAdmin(admin.ModelAdmin):
         "objetivo",
         "prioridad",
         "fecha_fin",
-        "total_tareas",
-        "tareas_ejecucion",
-        "tareas_completadas",
+        "mostrar_total_tareas",
+        "mostrar_tareas_ejecucion",
+        "mostrar_tareas_completadas",
     )
 
     list_filter = (
         "prioridad",
-        "objetivo"
+        "objetivo",
     )
 
     search_fields = (
         "nombre",
-        "descripcion"
+        "descripcion",
     )
 
     filter_horizontal = ("resultados",)
 
+    autocomplete_fields = (
+        "objetivo",
+        "responsable",
+    )
+
     inlines = [TareaInline]
 
-    def total_tareas(self, obj):
+    def mostrar_total_tareas(self, obj):
         return obj.tareas_totales()
 
-    def tareas_ejecucion(self, obj):
+    def mostrar_tareas_ejecucion(self, obj):
         return obj.tareas_ejecucion()
 
-    def tareas_completadas(self, obj):
+    def mostrar_tareas_completadas(self, obj):
         return obj.tareas_completadas()
 
-    total_tareas.short_description = "Tareas"
-    tareas_ejecucion.short_description = "En ejecución"
-    tareas_completadas.short_description = "Completadas"
+    mostrar_total_tareas.short_description = "Tareas"
+    mostrar_tareas_ejecucion.short_description = "En ejecución"
+    mostrar_tareas_completadas.short_description = "Completadas"
 
 
 # =============================
@@ -164,22 +194,63 @@ class TareaAdmin(admin.ModelAdmin):
         "estado",
         "responsable",
         "proyecto",
-        "fecha_limite"
+        "fecha_limite",
+        "fecha_creacion",
     )
 
     list_filter = (
         "estado",
         "responsable",
-        "proyecto"
+        "proyecto",
     )
 
     search_fields = (
         "titulo",
-        "descripcion"
+        "descripcion",
     )
 
     autocomplete_fields = (
         "iniciativa",
         "responsable",
-        "proyecto"
+        "proyecto",
     )
+
+    ordering = ("estado", "-fecha_creacion")
+
+
+# =============================
+# EVENTOS CALENDARIO
+# =============================
+@admin.register(EventoCalendario)
+class EventoCalendarioAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "titulo",
+        "usuario",
+        "fecha",
+        "hora_inicio",
+        "hora_fin",
+        "categoria",
+        "ubicacion",
+    )
+
+    list_filter = (
+        "categoria",
+        "fecha",
+        "usuario",
+    )
+
+    search_fields = (
+        "titulo",
+        "detalle",
+        "ubicacion",
+        "usuario__username",
+        "usuario__first_name",
+        "usuario__last_name",
+    )
+
+    autocomplete_fields = ("usuario",)
+
+    ordering = ("-fecha", "hora_inicio")
+
+    date_hierarchy = "fecha"

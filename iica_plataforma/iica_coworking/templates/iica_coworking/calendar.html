@@ -4,162 +4,286 @@
 {% block content %}
 
 <style>
+/* =========================
+   CONTENEDOR GENERAL
+========================= */
+.main-container{
+    min-height:calc(100vh - 100px);
+    background:var(--gris-fondo);
+    padding:40px;
+    border-radius:16px;
+    box-shadow:0 8px 25px rgba(0,0,0,.15);
+}
 
 .calendario-container{
-    background: var(--gris-fondo);
-    padding: 30px;
-    border-radius: 16px;
+    background:var(--gris-fondo);
+    padding:20px;
+    border-radius:16px;
 }
 
-/* HEADER */
-.cal-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:20px;
-}
-
-.cal-header h3{
-    font-weight:800;
+/* =========================
+   TABS
+========================= */
+.nav-pills .nav-link{
+    font-weight:600;
     color:var(--iica-azul);
 }
 
-/* GRID */
-.cal-grid{
+.nav-pills .nav-link.active{
+    background:var(--iica-azul);
+}
+
+/* =========================
+   LAYOUT
+========================= */
+.dashboard-layout{
     display:grid;
-    grid-template-columns: 80px repeat(7, 1fr);
+    grid-template-columns:220px 1fr 320px;
+    gap:20px;
+}
+
+/* =========================
+   SIDEBARS
+========================= */
+.sidebar-left,
+.sidebar-right,
+.timeline-board{
     background:white;
-    border-radius:12px;
-    overflow:hidden;
+    border-radius:14px;
+    padding:20px;
     box-shadow:0 4px 14px rgba(0,0,0,.12);
 }
 
-/* CELDAS */
-.cal-cell{
+/* =========================
+   SEMANA IZQUIERDA
+========================= */
+.dia-item{
+    padding:16px;
+    border-radius:14px;
+    margin-bottom:12px;
+    cursor:pointer;
+    text-align:center;
+    transition:.2s;
     border:1px solid #eee;
-    min-height:80px;
-    position:relative;
 }
 
-/* HORAS */
-.cal-hour{
-    font-size:12px;
-    text-align:center;
-    padding-top:10px;
-    color:#777;
+.dia-item:hover{
+    background:#f7f7f7;
 }
 
-/* HEADER DIAS */
-.cal-day-header{
-    background:var(--iica-azul);
-    color:white;
+.dia-item.activo{
+    background:#eef5fb;
+    border:2px solid var(--iica-azul);
+}
+
+.dia-numero{
+    font-size:38px;
+    font-weight:800;
+    color:var(--iica-azul);
+    line-height:1;
+}
+
+.dia-nombre{
+    font-size:16px;
+    color:#666;
+    margin-top:4px;
+}
+
+/* =========================
+   TIMELINE
+========================= */
+.timeline-header{
+    display:grid;
+    grid-template-columns:180px repeat(10, 1fr);
+    margin-bottom:18px;
+    font-weight:700;
+    color:var(--iica-azul);
+}
+
+.hour-col{
     text-align:center;
-    padding:10px;
+    font-size:13px;
+}
+
+.person-row{
+    display:grid;
+    grid-template-columns:180px 1fr;
+    align-items:center;
+    margin-bottom:14px;
+}
+
+.person-name{
     font-weight:600;
+    padding-right:10px;
 }
 
-/* EVENTOS */
-.evento{
+.person-timeline{
+    position:relative;
+    height:50px;
+    background:#fafafa;
+    border:1px solid #eee;
+    border-radius:10px;
+}
+
+/* =========================
+   EVENTOS
+========================= */
+.event-bar{
     position:absolute;
-    top:5px;
-    left:5px;
-    right:5px;
-
-    background:var(--iica-verde);
+    top:7px;
+    height:36px;
+    border-radius:8px;
+    padding:6px 12px;
     color:white;
-    padding:6px;
-    border-radius:6px;
-
     font-size:12px;
     cursor:pointer;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
 }
 
-.evento:hover{
-    opacity:0.9;
+.event-bar.teletrabajo{
+    background:#1976D2;
 }
 
+.event-bar.territorio{
+    background:#2E7D32;
+}
+
+.event-bar.reunion{
+    background:#F57C00;
+}
+
+.event-bar.no_disponible{
+    background:#C62828;
+}
+
+/* =========================
+   PANEL DERECHO
+========================= */
+#detalle-panel h5{
+    color:var(--iica-azul);
+    font-weight:700;
+}
 </style>
+
+<div class="franja_baja4"></div>
 
 <div class="main-container">
 
-<!-- TABS -->
-<ul class="nav nav-pills mb-4">
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'okr_kanban' %}">
-            Kanban
-        </a>
-    </li>
+    <!-- TABS -->
+    <ul class="nav nav-pills mb-4">
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'okr_kanban' %}">
+                Kanban
+            </a>
+        </li>
 
-    <li class="nav-item">
-        <a class="nav-link active" href="{% url 'calendario' %}">
-            Calendario
-        </a>
-    </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="{% url 'calendario' %}">
+                Calendario
+            </a>
+        </li>
 
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'okr_tablero' %}">
-            OKR
-        </a>
-    </li>
-</ul>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'okr_tablero' %}">
+                OKR
+            </a>
+        </li>
+    </ul>
 
-<div class="calendario-container">
+    <div class="calendario-container">
 
-<!-- HEADER -->
-<div class="cal-header">
-    <button class="btn btn-outline-primary">← Semana</button>
-    <h3>Semana actual</h3>
-    <button class="btn btn-outline-primary">Semana →</button>
-</div>
-
-<!-- GRID -->
-<div class="cal-grid">
-
-    <!-- HEADER VACÍO -->
-    <div></div>
-
-    <!-- DÍAS -->
-    {% for d in dias %}
-        <div class="cal-day-header">
-            {{ d }}
-        </div>
-    {% endfor %}
-
-    <!-- HORAS -->
-    {% for h in horas %}
-
-        <!-- COLUMNA HORA -->
-        <div class="cal-cell cal-hour">
-            {{ h }}
+        <!-- LEYENDA -->
+        <div class="mb-3">
+            <span class="badge bg-primary">Teletrabajo</span>
+            <span class="badge bg-success">Territorio</span>
+            <span class="badge bg-warning text-dark">Reunión</span>
+            <span class="badge bg-danger">No disponible</span>
         </div>
 
-        <!-- CELDAS POR DÍA -->
-        {% for d in dias %}
+        <div class="dashboard-layout">
 
-            <div class="cal-cell">
+            <!-- IZQUIERDA -->
+            <div class="sidebar-left">
+                {% for dia in dias_semana %}
+                    <div class="dia-item {% if dia.activo %}activo{% endif %}"
+                         onclick="window.location='?fecha={{ dia.fecha|date:'Y-m-d' }}'">
 
-                {% for evento in eventos %}
-
-                    {% if evento.dia == d and evento.hora == h %}
-
-                        <div class="evento">
-                            {{ evento.titulo }}
+                        <div class="dia-numero">
+                            {{ dia.fecha.day }}
                         </div>
 
-                    {% endif %}
-
+                        <div class="dia-nombre">
+                            {{ dia.nombre }}
+                        </div>
+                    </div>
                 {% endfor %}
-
             </div>
 
-        {% endfor %}
+            <!-- CENTRO -->
+            <div class="timeline-board">
 
-    {% endfor %}
+                <div class="timeline-header">
+                    <div></div>
+                    {% for h in horas %}
+                        <div class="hour-col">{{ h }}:00</div>
+                    {% endfor %}
+                </div>
 
+                {% for usuario in usuarios %}
+                    <div class="person-row">
+
+                        <div class="person-name">
+                            {{ usuario.get_full_name|default:usuario.username }}
+                        </div>
+
+                        <div class="person-timeline">
+
+                            {% for evento in eventos %}
+                                {% if evento.usuario_id == usuario.id %}
+                                    <div class="event-bar {{ evento.categoria }}"
+                                         style="left:{{ evento.left }}%; width:{{ evento.width }}%;"
+                                         data-user="{{ usuario.get_full_name|default:usuario.username }}"
+                                         data-title="{{ evento.titulo }}"
+                                         data-detail="{{ evento.detalle }}"
+                                         data-location="{{ evento.ubicacion }}"
+                                         data-time="{{ evento.hora_inicio }} - {{ evento.hora_fin }}"
+                                         title="{{ evento.titulo }} | {{ evento.hora_inicio }} - {{ evento.hora_fin }}">
+                                        {{ evento.titulo }}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- DERECHA -->
+            <div class="sidebar-right" id="detalle-panel">
+                <h5>Detalle</h5>
+                <p>Selecciona una actividad</p>
+            </div>
+
+        </div>
+    </div>
 </div>
 
-</div>
+<script>
+document.querySelectorAll(".event-bar").forEach(el=>{
+    el.addEventListener("click", function(){
 
-</div>
+        document.getElementById("detalle-panel").innerHTML = `
+            <h5>${this.dataset.user}</h5>
+            <hr>
+            <p><strong>${this.dataset.title}</strong></p>
+            <p>${this.dataset.time}</p>
+            <p>${this.dataset.location || ''}</p>
+            <p>${this.dataset.detail || ''}</p>
+        `;
+    });
+});
+</script>
 
 {% endblock %}

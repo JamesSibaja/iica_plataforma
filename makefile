@@ -125,6 +125,19 @@ enable-microsoft:
 
 	docker compose down
 	docker compose --env-file .env up -d --build
+	$(COMPOSE) up --no-build --no-recreate -d $(SERVICES)
+	$(COMPOSE) exec -T gunicorn_vm python manage.py makemigrations
+	$(COMPOSE) exec -T gunicorn_vm python manage.py migrate
+	@if [ "$$MODE" = "production" ]; then \
+		$(COMPOSE) exec -T gunicorn_vm python manage.py collectstatic --noinput; \
+	fi
+	$(COMPOSE) down
+
+	$(COMPOSE) up --no-build -d --no-recreate $(SERVICES)
+	@if [ "$$MODE" = "production" ]; then \
+		echo "Recolectando estáticos..."; \
+		$(COMPOSE) exec -T gunicorn_vm python manage.py collectstatic --noinput; \
+	fi
 
 
 # =========================

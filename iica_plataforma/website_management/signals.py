@@ -1,8 +1,19 @@
-# signals.py
-from allauth.account.signals import user_signed_up
+from allauth.socialaccount.signals import social_account_updated
 from django.dispatch import receiver
+from .models import PerfilMicrosoft
 
-@receiver(user_signed_up)
-def microsoft_signup_handler(request, user, **kwargs):
-    user.is_active = True
-    user.save()
+@receiver(social_account_updated)
+def guardar_microsoft(sender, request, sociallogin, **kwargs):
+
+    user = sociallogin.user
+    extra_data = sociallogin.account.extra_data
+
+    PerfilMicrosoft.objects.update_or_create(
+        usuario=user,
+        defaults={
+            "microsoft_id": extra_data.get("id"),
+            "email": extra_data.get("mail") or extra_data.get("userPrincipalName"),
+            "access_token": sociallogin.token.token,
+            "refresh_token": sociallogin.token.token_secret or "",
+        }
+    )
