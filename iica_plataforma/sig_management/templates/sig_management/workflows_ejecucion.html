@@ -1,0 +1,499 @@
+{% extends "generica.html" %}
+{% load static %}
+{% load sig_extras %}
+{% block content %}
+<style>
+    :root {
+        --iica-azul: #00589C;
+        --iica-verde: #00a380;
+        --iica-naranja: #ff8d30;
+        --iica-gris-fondo: #F4F4F4;
+    }
+
+    .main-container {
+        min-height: calc(100vh - 100px);
+        background: var(--iica-gris-fondo);
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0 8px 25px rgba(0,0,0,.15);
+    }
+
+    .sidebar {
+        background: white;
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    }
+
+    .tabla-scroll {
+        max-height: 55vh;
+        overflow-y: auto;
+    }
+
+    .workflow-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        border-left: 5px solid transparent;
+        transition: all .2s ease;
+        background: #fafafa;
+    }
+
+    .workflow-item:hover {
+        background: rgba(0,88,156,.08);
+    }
+
+    .workflow-active {
+        background: var(--iica-azul) !important;
+        color: white !important;
+    }
+
+    .panel-lateral {
+        background: white;
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    }
+
+    /* Línea de tiempo auditable */
+    .timeline {
+        border-left: 3px solid var(--iica-azul);
+        list-style: none;
+        padding-left: 20px;
+        margin-top: 15px;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -27px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--iica-azul);
+    }
+
+    .timeline-item.completed::before {
+        background: var(--iica-verde);
+        border-color: var(--iica-verde);
+    }
+
+    .timeline-item.current::before {
+        background: var(--iica-naranja);
+        border-color: var(--iica-naranja);
+    }
+</style>
+
+<div class="franja_baja4"></div>
+<div class="main-container">
+    
+    <!-- BARRA SUPERIOR -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h2 class="fw-bold" style="color: var(--iica-azul);">Gestor Electrónico de Trámites (GET) - IICA</h2>
+            <p class="text-muted mb-0">Gestión de flujos mediante listas enlazadas y trazabilidad documental.</p>
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+            <button class="btn btn-outline-primary fw-bold shadow-sm me-2" data-bs-toggle="modal" data-bs-target="#modalNuevaPlantilla">
+                <i class="bi bi-gear-fill me-1"></i> + Crear Plantilla
+            </button>
+            <button class="btn btn-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoFlujo">
+                <i class="bi bi-play-circle-fill me-1"></i> Iniciar Instancia
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- SIDEBAR DE BANDEJAS -->
+        <div class="col-md-3">
+            <div class="sidebar">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0" style="color: var(--iica-azul);">Bandeja</h5>
+                    <!-- Filtro Activos vs Procesados -->
+                    <div class="btn-group btn-group-sm">
+                        <a href="?estado=en_curso" class="btn btn-outline-primary {% if estado_filtro == 'en_curso' %}active{% endif %}">Activos</a>
+                        <a href="?estado=finalizados" class="btn btn-outline-primary {% if estado_filtro == 'finalizados' %}active{% endif %}">Historial</a>
+                    </div>
+                </div>
+
+                <!-- TABS DE NAVEGACIÓN -->
+                <ul class="nav nav-pills nav-fill mb-3" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link {% if modo == 'mis_flujos' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#panel-mis" type="button">
+                            Mis Trámites ({{ mis_flujos.count }})
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link {% if modo == 'asignados' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#panel-asignados" type="button">
+                            Pendientes <span class="badge bg-warning text-dark">{{ flujos_asignados.count }}</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content tabla-scroll">
+                    <!-- MIS FLUJOS -->
+                    <div class="tab-pane fade {% if modo == 'mis_flujos' %}show active{% endif %}" id="panel-mis" role="tabpanel">
+                        {% for f in mis_flujos %}
+                        <div class="workflow-item {% if execution_sel and execution_sel.id == f.id %}workflow-active{% endif %}"
+                             onclick="location.href='{% url 'workflows_ejecucion_detalle' f.id %}?modo=mis_flujos&estado={{ estado_filtro }}'">
+                            <div>
+                                <span class="d-block small fw-bold">{{ f.workflow_template.name }}</span>
+                                <span class="text-muted" style="font-size: 0.75rem;">ID: #{{ f.id }}</span>
+                            </div>
+                            <span class="badge {% if f.status == 'COMPLETED' %}bg-success{% else %}bg-warning text-dark{% endif %}" style="font-size: 0.6rem;">
+                                {{ f.get_status_display }}
+                            </span>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted text-center small mt-3">No hay registros.</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- ASIGNADOS -->
+                    <div class="tab-pane fade {% if modo == 'asignados' %}show active{% endif %}" id="panel-asignados" role="tabpanel">
+                        {% for f in flujos_asignados %}
+                        <div class="workflow-item {% if execution_sel and execution_sel.id == f.id %}workflow-active{% endif %}"
+                             onclick="location.href='{% url 'workflows_ejecucion_detalle' f.id %}?modo=asignados&estado={{ estado_filtro }}'">
+                            <div>
+                                <span class="d-block small fw-bold">{{ f.workflow_template.name }}</span>
+                                <span class="text-muted" style="font-size: 0.75rem;">Paso: {{ f.current_stage_execution.name|default:"Finalizado" }}</span>
+                            </div>
+                            <span class="badge bg-danger" style="font-size: 0.6rem;">Acción</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted text-center small mt-3">Sin tareas pendientes.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENIDO PRINCIPAL Y FORMULARIO -->
+        <div class="col-md-9">
+            {% if execution_sel %}
+            <div class="row g-4">
+                <!-- FORMULARIO Y DATOS DE LA ETAPA -->
+                <div class="col-lg-7">
+                    <div class="panel-lateral">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0" style="color: var(--iica-azul);">
+                                <i class="bi bi-file-earmark-text-fill me-2"></i> Formulario Institucional
+                            </h5>
+                            <span class="badge bg-secondary">Estado: {{ execution_sel.get_status_display }}</span>
+                        </div>
+
+                        <!-- SECCIÓN DE DESCARGA DE DOCUMENTOS FINALES (PDF / WORD GENERADO) -->
+                        {% if execution_sel.generated_pdf %}
+                        <div class="alert alert-success mt-2 mb-3 p-2 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-file-earmark-pdf-fill me-2"></i> Documento Final Generado</span>
+                            <a href="{{ execution_sel.generated_pdf.url }}" target="_blank" class="btn btn-sm btn-success fw-bold">
+                                Descargar PDF
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <form method="post" action="{% url 'avanzar_etapa' execution_sel.id %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            {% if form_fields %}
+                                <div class="p-3 bg-light rounded border mb-3">
+                                    <h6 class="fw-bold text-secondary mb-3">Campos del Trámite</h6>
+                                    
+                                    {% for field in form_fields %}
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">
+                                            {{ field.label }} {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
+                                        </label>
+                                        
+                                        {% with val=form_values_map|get_item:field.id %}
+                                        {% if field.field_type == 'FILE' %}
+                                            {% if val.file_value %}
+                                                <div class="mb-1">
+                                                    <a href="{{ val.file_value.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                                        <i class="bi bi-download"></i> Descargar archivo actual
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                            <input type="file" name="field_{{ field.id }}" class="form-control form-control-sm" {% if not es_asignado_actual %}disabled{% endif %}>
+                                        {% elif field.field_type == 'TEXTAREA' %}
+                                            <textarea name="field_{{ field.id }}" class="form-control form-control-sm" rows="2" {% if not es_asignado_actual %}disabled{% endif %}>{{ val.text_value|default:'' }}</textarea>
+                                        {% else %}
+                                            <input type="{{ field.field_type|lower }}" name="field_{{ field.id }}" class="form-control form-control-sm" value="{{ val.text_value|default:'' }}" {% if not es_asignado_actual %}disabled{% endif %}>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted small">No hay campos configurados para este formulario.</p>
+                            {% endif %}
+
+                            {% if es_asignado_actual and execution_sel.status == 'IN_PROGRESS' %}
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Comentarios de cierre de etapa</label>
+                                    <textarea name="comments" class="form-control form-control-sm" rows="2" placeholder="Observaciones..."></textarea>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-success btn-sm fw-bold flex-grow-1">Guardar y Avanzar Etapa</button>
+                                </div>
+                            {% endif %}
+                        </form>
+
+                        <!-- Botón de Retroceso -->
+                        {% if es_asignado_actual and execution_sel.status == 'IN_PROGRESS' and execution_sel.current_stage_execution.previous_execution %}
+                        <form method="post" action="{% url 'retroceder_etapa' execution_sel.id %}" class="mt-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">Devolver a Etapa Anterior</button>
+                        </form>
+                        {% endif %}
+
+                        <!-- Botón de Romper / Cancelar Flujo Ad-Hoc -->
+                        {% if execution_sel.status == 'IN_PROGRESS' and es_iniciador or es_asignado_actual %}
+                        <form method="post" action="{% url 'romper_flujo_ad_hoc' execution_sel.id %}" class="mt-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-dark btn-sm w-100" onclick="return confirm('¿Está seguro de interrumpir/romper este flujo de forma definitiva?');">
+                                Interrumpir / Romper Flujo
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- LÍNEA DE TIEMPO AUDITABLE -->
+                <div class="col-lg-5">
+                    <div class="panel-lateral">
+                        <h5 class="fw-bold mb-3" style="color: var(--iica-azul);">
+                            <i class="bi bi-clock-history me-2"></i> Línea de Tiempo
+                        </h5>
+                        <ul class="timeline">
+                            {% for etapa in etapas_historial %}
+                            <li class="timeline-item {% if etapa.status == 'COMPLETED' %}completed{% elif etapa.status == 'PENDING' %}current{% endif %}">
+                                <span class="d-block fw-bold small text-dark">{{ etapa.name }}</span>
+                                <span class="text-muted" style="font-size: 0.7rem;">Estado: {{ etapa.get_status_display }}</span>
+                                {% if etapa.completed_by %}
+                                    <span class="d-block text-secondary" style="font-size: 0.7rem;">Por: {{ etapa.completed_by.get_full_name|default:etapa.completed_by.username }}</span>
+                                {% endif %}
+                                {% if etapa.comments %}
+                                    <p class="small bg-light p-2 rounded mt-1 mb-0" style="font-size: 0.75rem;">{{ etapa.comments }}</p>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="panel-lateral text-center py-5">
+                <h5 class="text-muted">Seleccione un trámite de la bandeja izquierda para ver su detalle.</h5>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NUEVA PLANTILLA (CONSTRUCTOR AVANZADO) -->
+<div class="modal fade" id="modalNuevaPlantilla" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <form method="post" action="{% url 'crear_plantilla_flujo' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">Constructor Avanzado de Plantillas y Trámites</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+                    
+                    <!-- DATOS GENERALES -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nombre del Proceso</label>
+                            <input type="text" name="template_name" class="form-control" required placeholder="Ej: Aprobación de Fondos">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Plantilla de Documento Word (.docx)</label>
+                            <input type="file" name="word_template_file" class="form-control" accept=".docx">
+                            <div class="form-text">Archivo base para generar reportes automáticos con las respuestas.</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción General</label>
+                            <textarea name="template_description" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- ETAPAS Y ACTORES -->
+                    <h5 class="fw-bold text-primary">1. Definición de Etapas y Actores</h5>
+                    <div id="contenedor-etapas">
+                        <div class="card p-3 mb-3 bg-light stage-card" data-stage-id="1">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Nombre de la Etapa 1</label>
+                                    <input type="text" name="stage_name[]" class="form-control form-control-sm" value="Solicitud Inicial" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Actores / Usuarios Asignados</label>
+                                    <select name="stage_users_1[]" class="form-select form-select-sm" multiple required>
+                                        {% for u in all_users %}
+                                            <option value="{{ u.id }}">
+                                                {% if u.get_full_name %}
+                                                    {{ u.get_full_name }} ({{ u.username }})
+                                                {% else %}
+                                                    {{ u.username }}
+                                                {% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Mantén presionado Ctrl/Cmd para seleccionar varios.</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small">Instrucciones para esta etapa</label>
+                                    <textarea name="stage_instructions[]" class="form-control form-control-sm" rows="1">Complete los datos iniciales.</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="agregarEtapa()">+ Agregar otra etapa</button>
+
+                    <hr>
+
+                    <!-- PREGUNTAS Y MAPEO A WORD -->
+                    <h5 class="fw-bold text-primary">2. Preguntas del Formulario y Mapeo Documental</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Pregunta / Etiqueta</th>
+                                    <th>Tipo de Campo</th>
+                                    <th style="width: 120px;">Asignar a Etapa Nº</th>
+                                    <th>Etiqueta Word (Placeholder)</th>
+                                    <th style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="contenedor-campos">
+                                <tr>
+                                    <td><input type="text" name="field_label[]" class="form-control form-control-sm" placeholder="Ej: Motivo del viaje" required></td>
+                                    <td>
+                                        <select name="field_type[]" class="form-select form-select-sm">
+                                            <option value="TEXT">Texto Corto</option>
+                                            <option value="TEXTAREA">Texto Largo</option>
+                                            <option value="FILE">Archivo Adjunto</option>
+                                            <option value="DATE">Fecha</option>
+                                            <option value="NUMBER">Número</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="number" name="field_stage_index[]" class="form-control form-control-sm etapa-ref" value="1" min="1"></td>
+                                    <td><input type="text" name="field_docx_tag[]" class="form-control form-control-sm" placeholder="ej_motivo"></td>
+                                    <td><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">×</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="agregarCampo()">+ Agregar pregunta</button>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary fw-bold">Guardar Plantilla Completa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NUEVO FLUJO -->
+<div class="modal fade" id="modalNuevoFlujo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'iniciar_nuevo_flujo' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Iniciar Instancia de Trámite</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Seleccione Plantilla</label>
+                        <select name="workflow_template_id" class="form-select" required>
+                            <option value="" selected disabled>-- Elija --</option>
+                            {% for t in available_templates %}
+                                <option value="{{ t.id }}">{{ t.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-sm">Iniciar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let totalEtapas = 1;
+
+function agregarEtapa() {
+    totalEtapas++;
+    const container = document.getElementById('contenedor-etapas');
+    
+    const primerSelect = document.querySelector('[name="stage_users_1[]"]');
+    const selectUsuariosHTML = primerSelect ? primerSelect.innerHTML : '';
+
+    const div = document.createElement('div');
+    div.className = 'card p-3 mb-3 bg-light stage-card';
+    div.dataset.stageId = totalEtapas;
+    div.innerHTML = `
+        <div class="row g-2">
+            <div class="col-md-6">
+                <label class="form-label small fw-bold">Nombre de la Etapa ${totalEtapas}</label>
+                <input type="text" name="stage_name[]" class="form-control form-control-sm" required placeholder="Ej: Revisión Técnica">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-bold">Actores / Usuarios Asignados</label>
+                <select name="stage_users_${totalEtapas}[]" class="form-select form-select-sm" multiple required>
+                    ${selectUsuariosHTML}
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label small">Instrucciones</label>
+                <textarea name="stage_instructions[]" class="form-control form-control-sm" rows="1"></textarea>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+function agregarCampo() {
+    const tbody = document.getElementById('contenedor-campos');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><input type="text" name="field_label[]" class="form-control form-control-sm" placeholder="Pregunta" required></td>
+        <td>
+            <select name="field_type[]" class="form-select form-select-sm">
+                <option value="TEXT">Texto Corto</option>
+                <option value="TEXTAREA">Texto Largo</option>
+                <option value="FILE">Archivo Adjunto</option>
+                <option value="DATE">Fecha</option>
+                <option value="NUMBER">Número</option>
+            </select>
+        </td>
+        <td><input type="number" name="field_stage_index[]" class="form-control form-control-sm etapa-ref" value="1" min="1"></td>
+        <td><input type="text" name="field_docx_tag[]" class="form-control form-control-sm" placeholder="tag_variable"></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">×</button></td>
+    `;
+    tbody.appendChild(tr);
+}
+</script>
+{% endblock %}
