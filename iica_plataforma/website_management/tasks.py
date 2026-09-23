@@ -1,5 +1,5 @@
-from email.utils import parsedate_to_datetime
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from django.utils import timezone
 from celery import shared_task
 from .service.rss_service import obtener_noticias
@@ -7,8 +7,7 @@ from .models import Noticia
 
 @shared_task
 def actualizar_noticias():
-    noticias = obtener_noticias(max_items=50)
-
+    noticias = obtener_noticias(max_items=30)
     creadas = 0
     actualizadas = 0
 
@@ -18,33 +17,25 @@ def actualizar_noticias():
             continue
 
         raw_fecha = noticia.get("fecha")
-        fecha_publicacion = None
+        fecha_publicacion = timezone.now()
 
         if raw_fecha:
             try:
-                # Intenta parsear ISO
-                fecha_publicacion = datetime.fromisoformat(raw_fecha)
-            except (ValueError, TypeError):
-                try:
-                    # Intenta parsear formato estándar RSS (RFC 822)
-                    fecha_publicacion = parsedate_to_datetime(raw_fecha)
-                except Exception:
-                    fecha_publicacion = timezone.now()
+                fecha_publicacion = parsedate_to_datetime(raw_fecha)
+            except Exception:
+                pass
 
         defaults = {
             "titulo": noticia.get("titulo", "")[:500],
             "resumen": noticia.get("resumen", ""),
             "imagen": noticia.get("imagen", ""),
-            "imagen_origen": noticia.get("imagen_origen", ""),
-            "fuente": noticia.get("fuente_configurada", noticia.get("fuente", "")),
+            "fuente": noticia.get("fuente", ""),
             "fecha_publicacion": fecha_publicacion,
-            "tipo": noticia.get("tipo", Noticia.TIPO_NOTICIA),
             "score": noticia.get("score", 0),
-            "hash_noticia": noticia.get("hash_noticia", ""),
             "activa": True,
         }
 
-        objeto, creado = Noticia.objects.update_or_create(
+        _, creado = Noticia.objects.update_or_create(
             link=link,
             defaults=defaults,
         )
@@ -54,4 +45,4 @@ def actualizar_noticias():
         else:
             actualizadas += 1
 
-    return f"Procesadas: {len(noticias)} | Nuevas: {creadas} | Actualizadas: {actualizadas}"
+    return f"Procesadas | Nuevas: {creadas} | Actualizadas: {actualizadas}"

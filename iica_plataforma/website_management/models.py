@@ -81,3 +81,22 @@ class PerfilMicrosoft(models.Model):
 
     def __str__(self):
         return self.usuario.username
+    
+class Noticia(models.Model):
+    TIPO_NOTICIA = 'noticia'
+    
+    titulo = models.CharField(max_length=500)
+    link = models.URLField(unique=True, max_length=500)
+    resumen = models.TextField(blank=True, null=True)
+    imagen = models.URLField(max_length=1000, blank=True, null=True)
+    imagen_origen = models.URLField(max_length=1000, blank=True, null=True)
+    fuente = models.CharField(max_length=200, blank=True, null=True)
+    fecha_publicacion = models.DateTimeField(blank=True, null=True)
+    tipo = models.CharField(max_length=50, default=TIPO_NOTICIA)
+    score = models.IntegerField(default=0)
+    hash_noticia = models.CharField(max_length=64, blank=True, null=True)
+    activa = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.titulo

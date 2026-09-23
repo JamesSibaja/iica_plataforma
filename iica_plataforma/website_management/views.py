@@ -11,7 +11,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
-from .service.rss_service import obtener_noticias
+# from django.core.paginator import Paginator
+from .models import Noticia
 
 from .forms import (
     LoginForm,
@@ -21,31 +22,22 @@ from .forms import (
 
 
 
-# def index(request):
-
-#     noticias = obtener_noticias()
-
-#     return render(request, "website_management/index.html", {
-#         "noticias": noticias
-#     })
 
 
 def home(request):
-    page = int(request.GET.get("page", 1))
-    per_page = 6
-
-    noticias = obtener_noticias(30)
-
-    start = (page - 1) * per_page
-    end = start + per_page
-
-    paginadas = noticias[start:end]
+    page_number = request.GET.get("page", 1)
+    
+    # Consultar exclusivamente la base de datos, ordenadas por fecha o score
+    queryset = Noticia.objects.filter(activa=True).order_by('-fecha_publicacion', '-score')
+    
+    paginator = Paginator(queryset, 6)  # 6 noticias por página
+    page_obj = paginator.get_page(page_number)
 
     return render(request, "website_management/index.html", {
-        "noticias": paginadas,
-        "page": page,
-        "has_next": end < len(noticias),
-        "has_prev": page > 1,
+        "noticias": page_obj,
+        "page": page_obj.number,
+        "has_next": page_obj.has_next(),
+        "has_prev": page_obj.has_previous(),
     })
 
 

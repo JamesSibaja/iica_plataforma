@@ -149,7 +149,7 @@
 
     <div class="noticias-section mt-5">
 
-        <h3 class="mb-4">Noticias del Agro en Costa Rica</h3>
+        <h3 class="mb-4 text-center">Noticias del Agro y Cooperación</h3>
     
         <div class="row">
             {% for n in noticias %}
@@ -157,25 +157,32 @@
     
                     <div class="card h-100 shadow-sm border-0">
 
-                        <img src="{{ n.imagen }}" class="card-img-top" style="height:160px; object-fit:cover;">
+                        {% if n.imagen %}
+                            <img src="{{ n.imagen }}" class="card-img-top" style="height:160px; object-fit:cover;" alt="Imagen de noticia">
+                        {% else %}
+                            <div class="bg-secondary text-white d-flex align-items-center justify-content:center;" style="height:160px;">
+                                <small>IICA Noticias</small>
+                            </div>
+                        {% endif %}
                     
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column">
                     
-                            <span class="badge bg-success mb-2">
-                                Score {{ n.score }}
-                            </span>
+                            <div class="mb-2">
+                                <span class="badge bg-success">
+                                    Score {{ n.score }}
+                                </span>
+                                <small class="text-muted ms-2">{{ n.fuente }}</small>
+                            </div>
                     
-                            <small class="text-muted">{{ n.fuente }}</small>
-                    
-                            <h5 class="mt-2">
+                            <h5 class="mt-2 h6 fw-bold">
                                 {{ n.titulo }}
                             </h5>
                     
-                            <p class="text-muted">
-                                {{ n.resumen|safe }}
+                            <p class="text-muted small flex-grow-1">
+                                {{ n.resumen|truncatechars:120|safe }}
                             </p>
                     
-                            <a href="{{ n.link }}" target="_blank" class="btn btn-sm btn-primary">
+                            <a href="{{ n.link }}" target="_blank" class="btn btn-sm btn-outline-primary mt-auto align-self-start">
                                 Leer más
                             </a>
                     
@@ -183,26 +190,31 @@
                     </div>
     
                 </div>
+            {% empty %}
+                <div class="col-12 text-center text-muted py-4">
+                    <p>No hay noticias disponibles en este momento. La sincronización se ejecutará automáticamente.</p>
+                </div>
             {% endfor %}
         </div>
-        <div class="d-flex justify-content-between mt-4">
 
+        <!-- =================== PAGINACIÓN =================== -->
+        <div class="d-flex justify-content-between mt-4">
             {% if has_prev %}
                 <a href="?page={{ page|add:-1 }}" class="btn btn-outline-secondary">
                     ← Anterior
                 </a>
+            {% else %}
+                <div></div>
             {% endif %}
         
             {% if has_next %}
-                <a href="?page={{ page|add:1 }}" class="btn btn-outline-primary">
+                <a href="?page={{ page|add:1 }}" class="btn btn-outline-primary ms-auto">
                     Siguiente →
                 </a>
             {% endif %}
-        
         </div>
+
     </div>
-
-
 
 </div>
 
@@ -219,16 +231,19 @@
 
     function showSlides() {
         let slides = document.querySelectorAll('.carousel img');
+        if (slides.length === 0) return;
         if (slideIndex >= slides.length) { slideIndex = 0; }
         if (slideIndex < 0) { slideIndex = slides.length - 1; }
 
         const offset = -slideIndex * 100;
-        document.querySelector('.carousel').style.transform = `translateX(${offset}%)`;
-
-        document.querySelector('.carousel').style.width = `${slides.length * 100}%`;
-        slides.forEach(slide => {
-            slide.style.width = `${100 / slides.length}%`;
-        });
+        const carousel = document.querySelector('.carousel');
+        if (carousel) {
+            carousel.style.transform = `translateX(${offset}%)`;
+            carousel.style.width = `${slides.length * 100}%`;
+            slides.forEach(slide => {
+                slide.style.width = `${100 / slides.length}%`;
+            });
+        }
     }
 
     setInterval(() => { plusSlides(1); }, 6000);

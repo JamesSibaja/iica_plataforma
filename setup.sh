@@ -95,6 +95,7 @@ EOF
 echo "Generando settings.py..."
 
 cat > iica_plataforma/iica_plataforma/settings.py <<EOL
+from celery.schedules import crontab
 from pathlib import Path
 import os
 
@@ -118,6 +119,15 @@ ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 
 USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH", "False").lower() == "true"
 
+
+
+CELERY_BEAT_SCHEDULE = {
+    'actualizar-noticias-diarias-8am': {
+        'task': 'website_management.tasks.actualizar_noticias',
+        'schedule': crontab(hour=8, minute=0),  # Todos los días a las 08:00 AM
+    },
+}
+
 INSTALLED_APPS = [
     'daphne',
     'django.contrib.admin',
@@ -130,9 +140,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     'django_celery_results',
+    'django_celery_beat',
     'iica_coworking',
     'secap',
     'website_management',
+    'sig_management',
 ]
 
 

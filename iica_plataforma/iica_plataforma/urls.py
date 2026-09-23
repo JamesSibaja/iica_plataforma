@@ -23,6 +23,7 @@ urlpatterns = [
     path('',include("website_management.urls")),
     path('',include("secap.urls")),
     path('',include("iica_coworking.urls")),
+    path('',include("sig_management.urls")),
     # path('',include("projects.urls")),
 ]
 
