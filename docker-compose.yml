@@ -96,6 +96,24 @@ services:
     networks:
       - mynetwork_vm
 
+  celery_beat_vm:
+    restart: unless-stopped
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+      args:
+        MODE: ${MODE:-development}
+    volumes:
+      - ./iica_plataforma:/app
+    networks:
+      - mynetwork_vm
+    depends_on:
+      - db_vm
+      - redis_vm
+    command: celery -A iica_plataforma beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
 networks:
   mynetwork_vm:
     driver: bridge

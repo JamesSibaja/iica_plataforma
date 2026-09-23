@@ -255,4 +255,4 @@ fix-docker-permissions:
 
 	@sudo usermod -aG docker $$(whoami)
 
-	@sudo chmod 666 /var/run/docker.socks
+	@sudo chmod 666 /var/run/docker.sock
