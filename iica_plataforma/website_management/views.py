@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
-# from django.core.paginator import Paginator
+from django.core.paginator import Paginator
 from .models import Noticia
 
 from .forms import (
@@ -19,10 +19,6 @@ from .forms import (
     CreateUserForm,
     CustomUserChangeForm
 )
-
-
-
-
 
 def home(request):
     page_number = request.GET.get("page", 1)

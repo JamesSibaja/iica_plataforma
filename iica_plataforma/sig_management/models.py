@@ -36,10 +36,10 @@ class StageTemplate(models.Model):
     name = models.CharField(max_length=255)
     instructions = models.TextField(help_text="Instrucciones de lo que el usuario debe hacer.")
     order = models.PositiveIntegerField(help_text="Secuencia de la etapa (1, 2, 3...)")
+    assigned_users = models.ManyToManyField(User, related_name="stage_templates", blank=True)
+    is_dynamic_assignee = models.BooleanField(default=False, help_text="Participante indefinido; se especifica al iniciar el trámite.")
     
-    # Usuarios asignados por defecto a esta etapa
-    assigned_users = models.ManyToManyField(User, related_name="stage_templates")
-    
+
     # Configuración de comportamiento
     requires_signature = models.BooleanField(default=False, help_text="¿Requiere firma vía DocuSeal?")
 
@@ -52,7 +52,6 @@ class StageTemplate(models.Model):
 
 
 class FormField(models.Model):
-    """Campos o preguntas generales del flujo (no atadas directamente a una etiqueta de Word)."""
     FIELD_TYPES = (
         ('TEXT', 'Texto Corto'),
         ('TEXTAREA', 'Texto Largo'),
@@ -62,23 +61,13 @@ class FormField(models.Model):
     )
 
     workflow_template = models.ForeignKey(WorkflowTemplate, on_delete=models.CASCADE, related_name="general_fields")
-    stage_template = models.ForeignKey(
-        StageTemplate, 
-        on_delete=models.CASCADE, 
-        related_name="general_fields",
-        help_text="Etapa en la que se debe llenar este campo."
-    )
+    stage_template = models.ForeignKey(StageTemplate, on_delete=models.CASCADE, related_name="general_fields")
     label = models.CharField(max_length=255)
     field_type = models.CharField(max_length=20, choices=FIELD_TYPES, default='TEXT')
     is_required = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=1)
-
-    class Meta:
-        ordering = ['order']
-
-    def __str__(self):
-        return f"[General] {self.label} ({self.field_type})"
-
+    placeholder_key = models.CharField(max_length=100, blank=True, null=True, help_text="Etiqueta asociada en el Word (si aplica)")
+    document_template = models.ForeignKey(DocumentTemplate, on_delete=models.SET_NULL, blank=True, null=True, related_name="associated_fields")
 
 class DocumentFieldMapping(models.Model):
     """Mapeo de las etiquetas {{ etiqueta }} detectadas en los documentos Word hacia preguntas del formulario."""
@@ -132,7 +121,9 @@ class WorkflowExecution(models.Model):
         blank=True, 
         related_name="+"
     )
-    
+
+    name = models.CharField(max_length=255, blank=True, null=True, help_text="Nombre específico de la instancia de trámite")
+        
     # Documentos finales resultantes (PDFs generados u otros)
     generated_pdf = models.FileField(upload_to="executions/pdfs/", null=True, blank=True)
     docuseal_envelope_id = models.CharField(max_length=255, null=True, blank=True)
@@ -141,7 +132,8 @@ class WorkflowExecution(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Instancia #{self.id} de {self.workflow_template.name}"
+        return f"{self.name or self.workflow_template.name} (#{self.id})"
+
 
 
 class StageExecution(models.Model):
@@ -218,3 +210,13 @@ class ExecutionAttachment(models.Model):
 
     def __str__(self):
         return f"Adjunto: {self.file.name} (Flujo #{self.workflow_execution.id})"
+    
+class GeneratedDocument(models.Model):
+    workflow_execution = models.ForeignKey(WorkflowExecution, on_delete=models.CASCADE, related_name="generated_documents")
+    document_template = models.ForeignKey(DocumentTemplate, on_delete=models.SET_NULL, null=True)
+    name = models.CharField(max_length=255)
+    file_path = models.CharField(max_length=500)  # Ruta absoluta o relativa al archivo generado (PDF o DOCX)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name

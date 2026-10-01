@@ -9,7 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-freefont-ttf \
     postgresql-client \
     python3-dev \
+    libssl-dev \
+    libffi-dev \
     build-essential \
+    cargo \
     pkg-config \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -19,6 +22,10 @@ WORKDIR /app
 # Instalar dependencias Python primero (mejor cache)
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libreoffice \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copiar código Django
 COPY ./iica_plataforma /app

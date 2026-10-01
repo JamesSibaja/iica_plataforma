@@ -9,4 +9,6 @@ urlpatterns = [
     path('flujos/<int:execution_id>/retroceder/', views.retroceder_etapa, name='retroceder_etapa'),
     path('flujos/plantilla/nueva/', views.crear_plantilla_flujo, name='crear_plantilla_flujo'),
     path('flujos/<int:execution_id>/romper/', views.romper_flujo_ad_hoc, name='romper_flujo_ad_hoc'),
+    path('documento/descargar/<int:doc_id>/', views.descargar_documento_generado, name='descargar_documento_generado'),
+    path('workflows/extraer-etiquetas-ajax/', views.extraer_etiquetas_ajax, name='extraer_etiquetas_ajax'),
 ]

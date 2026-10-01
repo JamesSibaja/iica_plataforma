@@ -9,6 +9,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    cargo \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libreoffice \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar dependencias Python

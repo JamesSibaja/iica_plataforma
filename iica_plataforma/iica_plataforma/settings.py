@@ -1,3 +1,4 @@
+from celery.schedules import crontab
 from pathlib import Path
 import os
 
@@ -21,6 +22,15 @@ ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 
 USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH", "False").lower() == "true"
 
+CELERY_TIMEZONE = 'America/Costa_Rica'
+
+CELERY_BEAT_SCHEDULE = {
+    'actualizar-noticias-diarias-1:16pm': {
+        'task': 'website_management.tasks.actualizar_noticias',
+        'schedule': crontab(hour=13, minute=40),  
+    },
+}
+
 INSTALLED_APPS = [
     'daphne',
     'django.contrib.admin',
@@ -33,9 +43,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     'django_celery_results',
+    'django_celery_beat',
     'iica_coworking',
     'secap',
     'website_management',
+    'sig_management',
 ]
 
 

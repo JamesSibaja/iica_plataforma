@@ -19,10 +19,10 @@ class StageTemplateInline(admin.TabularInline):
 
 
 class FormFieldInline(admin.TabularInline):
-    """Permite configurar las preguntas/campos directamente."""
+    """Permite configurar las preguntas y etiquetas de documentos directamente en la etapa."""
     model = FormField
     extra = 1
-    fields = ('order', 'label', 'placeholder_key', 'field_type', 'stage_template', 'is_required')
+    fields = ('order', 'label', 'placeholder_key', 'field_type', 'is_required')
 
 
 @admin.register(WorkflowTemplate)
@@ -35,11 +35,20 @@ class WorkflowTemplateAdmin(admin.ModelAdmin):
 
 @admin.register(StageTemplate)
 class StageTemplateAdmin(admin.ModelAdmin):
-    """Administración independiente para etapas, donde el filter_horizontal sí funciona perfecto."""
+    """Administración independiente para etapas, con asignación de usuarios y campos/etiquetas."""
     list_display = ('workflow', 'order', 'name', 'requires_signature')
     list_filter = ('workflow', 'requires_signature')
     search_fields = ('name', 'workflow__name')
     filter_horizontal = ('assigned_users',)
+    inlines = [FormFieldInline]
+
+
+@admin.register(FormField)
+class FormFieldAdmin(admin.ModelAdmin):
+    """Administración global de campos y etiquetas extraídas de documentos o creadas manualmente."""
+    list_display = ('label', 'placeholder_key', 'field_type', 'stage_template', 'order', 'is_required')
+    list_filter = ('field_type', 'is_required', 'stage_template__workflow')
+    search_fields = ('label', 'placeholder_key', 'stage_template__name')
 
 
 class StageExecutionInline(admin.TabularInline):

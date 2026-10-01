@@ -110,7 +110,7 @@
                 <i class="bi bi-gear-fill me-1"></i> + Crear Plantilla
             </button>
             <button class="btn btn-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoFlujo">
-                <i class="bi bi-play-circle-fill me-1"></i> Iniciar Instancia
+                <i class="bi bi-play-circle-fill me-1"></i> Iniciar Trámite
             </button>
         </div>
     </div>
@@ -121,7 +121,6 @@
             <div class="sidebar">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold mb-0" style="color: var(--iica-azul);">Bandeja</h5>
-                    <!-- Filtro Activos vs Procesados -->
                     <div class="btn-group btn-group-sm">
                         <a href="?estado=en_curso" class="btn btn-outline-primary {% if estado_filtro == 'en_curso' %}active{% endif %}">Activos</a>
                         <a href="?estado=finalizados" class="btn btn-outline-primary {% if estado_filtro == 'finalizados' %}active{% endif %}">Historial</a>
@@ -194,29 +193,37 @@
                             <span class="badge bg-secondary">Estado: {{ execution_sel.get_status_display }}</span>
                         </div>
 
-                        <!-- SECCIÓN DE DESCARGA DE DOCUMENTOS FINALES (PDF / WORD GENERADO) -->
-                        {% if execution_sel.generated_pdf %}
-                        <div class="alert alert-success mt-2 mb-3 p-2 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-file-earmark-pdf-fill me-2"></i> Documento Final Generado</span>
-                            <a href="{{ execution_sel.generated_pdf.url }}" target="_blank" class="btn btn-sm btn-success fw-bold">
-                                Descargar PDF
-                            </a>
-                        </div>
+                        <!-- SECCIÓN DE DESCARGA DE DOCUMENTOS FINALES -->
+                        {% if execution_sel.status == 'COMPLETED' %}
+                            <div class="alert alert-success mt-3">
+                                <h6>Documentos Finales Generados:</h6>
+                                <ul class="mb-0">
+                                    {% for gen_doc in execution_sel.generated_documents.all %}
+                                        <li>
+                                            <a href="{% url 'descargar_documento_generado' gen_doc.id %}" class="fw-bold text-decoration-none">
+                                                📥 Descargar {{ gen_doc.name }} ({{ gen_doc.file_path|basename }})
+                                            </a>
+                                        </li>
+                                    {% empty %}
+                                        <li class="text-muted">Los documentos se están procesando o no hay archivos asociados.</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
                         {% endif %}
 
                         <form method="post" action="{% url 'avanzar_etapa' execution_sel.id %}" enctype="multipart/form-data">
                             {% csrf_token %}
                             
-                            {% if form_fields %}
+                            {% if form_fields or doc_mappings %}
                                 <div class="p-3 bg-light rounded border mb-3">
-                                    <h6 class="fw-bold text-secondary mb-3">Campos del Trámite</h6>
+                                    <h6 class="fw-bold text-secondary mb-3">Campos y Documentos del Trámite</h6>
                                     
+                                    <!-- Campos Manuales -->
                                     {% for field in form_fields %}
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold">
                                             {{ field.label }} {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
                                         </label>
-                                        
                                         {% with val=form_values_map|get_item:field.id %}
                                         {% if field.field_type == 'FILE' %}
                                             {% if val.file_value %}
@@ -235,11 +242,35 @@
                                         {% endwith %}
                                     </div>
                                     {% endfor %}
+                        
+                                    <!-- Mapeos de Etiquetas de Documentos -->
+                                    {% for mapping in doc_mappings %}
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ mapping.label }}</label>
+                                            
+                                            {% with val=form_values_map|get_item:mapping.id %}
+                                                {% if mapping.field_type == 'FILE' %}
+                                                    {% if val.file_value %}
+                                                        <div class="mb-1">
+                                                            <a href="{{ val.file_value.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                                                <i class="bi bi-download"></i> Descargar archivo actual
+                                                            </a>
+                                                        </div>
+                                                    {% endif %}
+                                                    <input type="file" name="mapping_{{ mapping.id }}" class="form-control form-control-sm" {% if not es_asignado_actual %}disabled{% endif %}>
+                                                {% elif mapping.field_type == 'TEXTAREA' %}
+                                                    <textarea name="mapping_{{ mapping.id }}" class="form-control form-control-sm" rows="2" {% if not es_asignado_actual %}disabled{% endif %}>{{ val.text_value|default:'' }}</textarea>
+                                                {% else %}
+                                                    <input type="{{ mapping.field_type|lower }}" name="mapping_{{ mapping.id }}" class="form-control form-control-sm" value="{{ val.text_value|default:'' }}" {% if not es_asignado_actual %}disabled{% endif %}>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </div>
+                                    {% endfor %}
                                 </div>
                             {% else %}
-                                <p class="text-muted small">No hay campos configurados para este formulario.</p>
+                                <p class="text-muted small">No hay campos configurados para este formulario en esta etapa.</p>
                             {% endif %}
-
+                        
                             {% if es_asignado_actual and execution_sel.status == 'IN_PROGRESS' %}
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold">Comentarios de cierre de etapa</label>
@@ -271,7 +302,7 @@
                     </div>
                 </div>
 
-                <!-- LÍNEA DE TIEMPO AUDITABLE -->
+                <!-- LÍNEA DE TIEMPO AUDITABLE CON FECHA Y HORA -->
                 <div class="col-lg-5">
                     <div class="panel-lateral">
                         <h5 class="fw-bold mb-3" style="color: var(--iica-azul);">
@@ -282,6 +313,12 @@
                             <li class="timeline-item {% if etapa.status == 'COMPLETED' %}completed{% elif etapa.status == 'PENDING' %}current{% endif %}">
                                 <span class="d-block fw-bold small text-dark">{{ etapa.name }}</span>
                                 <span class="text-muted" style="font-size: 0.7rem;">Estado: {{ etapa.get_status_display }}</span>
+                                {% if etapa.started_at %}
+                                    <span class="d-block text-secondary" style="font-size: 0.7rem;">Iniciado: {{ etapa.started_at|date:"d/m/Y H:i" }}</span>
+                                {% endif %}
+                                {% if etapa.completed_at %}
+                                    <span class="d-block text-secondary" style="font-size: 0.7rem;">Completado: {{ etapa.completed_at|date:"d/m/Y H:i" }}</span>
+                                {% endif %}
                                 {% if etapa.completed_by %}
                                     <span class="d-block text-secondary" style="font-size: 0.7rem;">Por: {{ etapa.completed_by.get_full_name|default:etapa.completed_by.username }}</span>
                                 {% endif %}
@@ -303,7 +340,6 @@
     </div>
 </div>
 
-<!-- MODAL NUEVA PLANTILLA (CONSTRUCTOR AVANZADO) -->
 <div class="modal fade" id="modalNuevaPlantilla" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -317,14 +353,9 @@
                     
                     <!-- DATOS GENERALES -->
                     <div class="row g-3 mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label class="form-label fw-bold">Nombre del Proceso</label>
                             <input type="text" name="template_name" class="form-control" required placeholder="Ej: Aprobación de Fondos">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Plantilla de Documento Word (.docx)</label>
-                            <input type="file" name="word_template_file" class="form-control" accept=".docx">
-                            <div class="form-text">Archivo base para generar reportes automáticos con las respuestas.</div>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Descripción General</label>
@@ -341,24 +372,28 @@
                             <div class="row g-2">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Nombre de la Etapa 1</label>
-                                    <input type="text" name="stage_name[]" class="form-control form-control-sm" value="Solicitud Inicial" required>
+                                    <input type="text" name="stage_name[]" class="form-control form-control-sm stage-name-input" value="Solicitud Inicial" required oninput="actualizarSelectsEtapas()">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Actores / Usuarios Asignados</label>
-                                    <select name="stage_users_1[]" class="form-select form-select-sm" multiple required>
+                                    <select name="stage_users_1[]" id="stage_users_1" class="form-select form-select-sm stage-users-select" multiple required>
                                         {% for u in all_users %}
                                             <option value="{{ u.id }}">
-                                                {% if u.get_full_name %}
-                                                    {{ u.get_full_name }} ({{ u.username }})
-                                                {% else %}
-                                                    {{ u.username }}
-                                                {% endif %}
+                                                {% if u.get_full_name %}{{ u.get_full_name }} ({{ u.username }}){% else %}{{ u.username }}{% endif %}
                                             </option>
                                         {% endfor %}
                                     </select>
                                     <div class="form-text">Mantén presionado Ctrl/Cmd para seleccionar varios.</div>
                                 </div>
-                                <div class="col-12">
+                                <div class="col-12 mt-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input stage-dynamic-checkbox" type="checkbox" name="stage_dynamic_1" id="dynamic_1" onchange="toggleParticipantesDinamicos(this, 1)">
+                                        <label class="form-check-label small fw-bold text-danger" for="dynamic_1">
+                                            Participante Dinámico / Indefinido (Se seleccionará al iniciar el trámite)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-2">
                                     <label class="form-label small">Instrucciones para esta etapa</label>
                                     <textarea name="stage_instructions[]" class="form-control form-control-sm" rows="1">Complete los datos iniciales.</textarea>
                                 </div>
@@ -369,22 +404,53 @@
 
                     <hr>
 
-                    <!-- PREGUNTAS Y MAPEO A WORD -->
-                    <h5 class="fw-bold text-primary">2. Preguntas del Formulario y Mapeo Documental</h5>
+                    <!-- DOCUMENTOS WORD (SIN ETAPA GLOBAL) -->
+                    <h5 class="fw-bold text-primary">2. Documentos Word (.docx) y sus Etiquetas</h5>
+                    <p class="text-muted small">Sube los documentos. Sus etiquetas <code>{{etiqueta}}</code> generarán preguntas automáticas que podrás asignar a la etapa de tu preferencia.</p>
+
+                    <div id="documentos-container">
+                        <div class="card p-3 mb-3 border bg-light document-row">
+                            <div class="row g-2 align-items-center mb-2">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Archivo Word (.docx)</label>
+                                    <input type="file" name="doc_file[]" class="form-control form-control-sm doc-file-input" accept=".docx" onchange="procesarDocumentoWord(this)" required>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold">Nombre Descriptivo</label>
+                                    <input type="text" name="doc_name[]" class="form-control form-control-sm" placeholder="Ej: Contrato Oficial" required>
+                                </div>
+                                <div class="col-md-1 text-end mt-4">
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.document-row').remove()">×</button>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 pt-2 border-top">
+                                <label class="form-label small fw-bold text-secondary">Mapeo Individual de Etiquetas de este Documento</label>
+                                <div class="mapeo-etiquetas-container p-2 bg-white border rounded">
+                                    <p class="text-muted small mb-0 placeholder-etiquetas">Sube un archivo Word arriba para extraer y configurar sus etiquetas...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="agregarDocumento()">+ Subir otro documento Word</button>
+
+                    <hr>
+
+                    <!-- PREGUNTAS MANUALES -->
+                    <h5 class="fw-bold text-primary">3. Preguntas Manuales Adicionales (Sin Etiquetas Word)</h5>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered align-middle">
                             <thead class="table-light">
                                 <tr>
                                     <th>Pregunta / Etiqueta</th>
                                     <th>Tipo de Campo</th>
-                                    <th style="width: 120px;">Asignar a Etapa Nº</th>
-                                    <th>Etiqueta Word (Placeholder)</th>
+                                    <th style="width: 180px;">Asociar a Etapa</th>
                                     <th style="width: 50px;"></th>
                                 </tr>
                             </thead>
                             <tbody id="contenedor-campos">
                                 <tr>
-                                    <td><input type="text" name="field_label[]" class="form-control form-control-sm" placeholder="Ej: Motivo del viaje" required></td>
+                                    <td><input type="text" name="field_label[]" class="form-control form-control-sm" placeholder="Ej: Observación interna" required></td>
                                     <td>
                                         <select name="field_type[]" class="form-select form-select-sm">
                                             <option value="TEXT">Texto Corto</option>
@@ -394,14 +460,17 @@
                                             <option value="NUMBER">Número</option>
                                         </select>
                                     </td>
-                                    <td><input type="number" name="field_stage_index[]" class="form-control form-control-sm etapa-ref" value="1" min="1"></td>
-                                    <td><input type="text" name="field_docx_tag[]" class="form-control form-control-sm" placeholder="ej_motivo"></td>
+                                    <td>
+                                        <select name="field_stage_index[]" class="form-select form-select-sm etapa-ref-select" required>
+                                            <option value="1">Etapa 1: Solicitud Inicial</option>
+                                        </select>
+                                    </td>
                                     <td><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">×</button></td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="agregarCampo()">+ Agregar pregunta</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="agregarCampoManual()">+ Agregar pregunta manual</button>
 
                 </div>
                 <div class="modal-footer">
@@ -414,27 +483,39 @@
 
 <!-- MODAL NUEVO FLUJO -->
 <div class="modal fade" id="modalNuevoFlujo" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form method="post" action="{% url 'iniciar_nuevo_flujo' %}">
                 {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Iniciar Instancia de Trámite</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold">Iniciar Nuevo Trámite</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre / Identificador del Trámite</label>
+                        <input type="text" name="instance_name" class="form-control" placeholder="Ej: Trámite de Viaje - Juan Pérez (Opcional)">
+                        <div class="form-text">Si se deja en blanco, se usará el nombre de la plantilla por defecto.</div>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label fw-bold">Seleccione Plantilla</label>
-                        <select name="workflow_template_id" class="form-select" required>
-                            <option value="" selected disabled>-- Elija --</option>
+                        <select name="workflow_template_id" id="select-template-flujo" class="form-select" required onchange="cargarDetallePlantillaInicio(this.value)">
+                            <option value="" selected disabled>-- Elija una plantilla --</option>
                             {% for t in available_templates %}
-                                <option value="{{ t.id }}">{{ t.name }}</option>
+                                <option value="{{ t.id }}" data-stages='[
+                                    {% for s in t.stages.all %}
+                                        {"id": {{ s.id }}, "name": "{{ s.name|escapejs }}", "order": {{ s.order }}, "is_dynamic": {% if s.is_dynamic_assignee %}true{% else %}false{% endif %}}{% if not forloop.last %},{% endif %}
+                                    {% endfor %}
+                                ]'>{{ t.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
+
+                    <div id="contenedor-participantes-dinamicos" class="mt-3"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success btn-sm">Iniciar</button>
+                    <button type="submit" class="btn btn-success fw-bold">Iniciar Trámite</button>
                 </div>
             </form>
         </div>
@@ -442,13 +523,13 @@
 </div>
 
 <script>
-let totalEtapas = 1;
 
-function agregarEtapa() {
+    let totalEtapas = 1;
+    
+    function agregarEtapa() {
     totalEtapas++;
     const container = document.getElementById('contenedor-etapas');
-    
-    const primerSelect = document.querySelector('[name="stage_users_1[]"]');
+    const primerSelect = document.querySelector('.stage-users-select');
     const selectUsuariosHTML = primerSelect ? primerSelect.innerHTML : '';
 
     const div = document.createElement('div');
@@ -458,42 +539,227 @@ function agregarEtapa() {
         <div class="row g-2">
             <div class="col-md-6">
                 <label class="form-label small fw-bold">Nombre de la Etapa ${totalEtapas}</label>
-                <input type="text" name="stage_name[]" class="form-control form-control-sm" required placeholder="Ej: Revisión Técnica">
+                <input type="text" name="stage_name[]" class="form-control form-control-sm stage-name-input" required placeholder="Ej: Revisión Técnica" oninput="actualizarSelectsEtapas()">
             </div>
             <div class="col-md-6">
                 <label class="form-label small fw-bold">Actores / Usuarios Asignados</label>
-                <select name="stage_users_${totalEtapas}[]" class="form-select form-select-sm" multiple required>
+                <select name="stage_users_${totalEtapas}[]" id="stage_users_${totalEtapas}" class="form-select form-select-sm stage-users-select" multiple required>
                     ${selectUsuariosHTML}
                 </select>
             </div>
-            <div class="col-12">
+            <div class="col-12 mt-2">
+                <div class="form-check">
+                    <input class="form-check-input stage-dynamic-checkbox" type="checkbox" name="stage_dynamic_${totalEtapas}" id="dynamic_${totalEtapas}" onchange="toggleParticipantesDinamicos(this, ${totalEtapas})">
+                    <label class="form-check-label small fw-bold text-danger" for="dynamic_${totalEtapas}">
+                        Participante Dinámico / Indefinido (Se seleccionará al iniciar el trámite)
+                    </label>
+                </div>
+            </div>
+            <div class="col-12 mt-2">
                 <label class="form-label small">Instrucciones</label>
                 <textarea name="stage_instructions[]" class="form-control form-control-sm" rows="1"></textarea>
             </div>
         </div>
     `;
     container.appendChild(div);
+    actualizarSelectsEtapas();
 }
+    
+    function agregarDocumento() {
+        const container = document.getElementById('documentos-container');
+        const div = document.createElement('div');
+        div.className = 'card p-3 mb-3 border bg-light document-row';
+        
+        div.innerHTML = `
+            <div class="row g-2 align-items-center">
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Archivo Word (.docx)</label>
+                    <input type="file" name="doc_file[]" class="form-control form-control-sm doc-file-input" accept=".docx" onchange="procesarDocumentoWord(this)" required>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold">Nombre Descriptivo</label>
+                    <input type="text" name="doc_name[]" class="form-control form-control-sm" placeholder="Ej: Anexo Adicional" required>
+                </div>
+                <div class="col-md-1 text-end mt-4">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.document-row').remove()">×</button>
+                </div>
+            </div>
+            <div class="mt-3 pt-2 border-top">
+                <label class="form-label small fw-bold text-secondary">Mapeo Individual de Etiquetas de este Documento</label>
+                <div class="mapeo-etiquetas-container p-2 bg-white border rounded">
+                    <p class="text-muted small mb-0 placeholder-etiquetas">Sube un archivo Word arriba para extraer y configurar sus etiquetas...</p>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+    
+    function agregarCampoManual() {
+        const tbody = document.getElementById('contenedor-campos');
+        const tr = document.createElement('tr');
+        
+        let opcionesEtapas = '';
+        const stageCards = document.querySelectorAll('.stage-card');
+        stageCards.forEach((card, index) => {
+            let num = index + 1;
+            let nombreInput = card.querySelector('.stage-name-input');
+            let nombre = nombreInput ? nombreInput.value.trim() || `Etapa ${num}` : `Etapa ${num}`;
+            opcionesEtapas += `<option value="${num}">Etapa ${num}: ${nombre}</option>`;
+        });
+    
+        tr.innerHTML = `
+            <td><input type="text" name="field_label[]" class="form-control form-control-sm" placeholder="Pregunta" required></td>
+            <td>
+                <select name="field_type[]" class="form-select form-select-sm">
+                    <option value="TEXT">Texto Corto</option>
+                    <option value="TEXTAREA">Texto Largo</option>
+                    <option value="FILE">Archivo Adjunto</option>
+                    <option value="DATE">Fecha</option>
+                    <option value="NUMBER">Número</option>
+                </select>
+            </td>
+            <td>
+                <select name="field_stage_index[]" class="form-select form-select-sm etapa-ref-select" required>
+                    ${opcionesEtapas}
+                </select>
+            </td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">×</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    function actualizarSelectsEtapas() {
+        const stageCards = document.querySelectorAll('.stage-card');
+        let opcionesEtapas = '';
+        
+        stageCards.forEach((card, index) => {
+            let num = index + 1;
+            let nombreInput = card.querySelector('.stage-name-input');
+            let nombre = nombreInput ? nombreInput.value.trim() || `Etapa ${num}` : `Etapa ${num}`;
+            opcionesEtapas += `<option value="${num}">Etapa ${num}: ${nombre}</option>`;
+        });
+    
+        const selectsRef = document.querySelectorAll('.etapa-ref-select');
+        selectsRef.forEach(select => {
+            let valorSeleccionado = select.value;
+            select.innerHTML = opcionesEtapas;
+            select.value = valorSeleccionado;
+            if (!select.value) {
+                select.value = "1";
+            }
+        });
+    }
+    
+    function cargarDetallePlantillaInicio(templateId) {
+        const select = document.getElementById('select-template-flujo');
+        const selectedOption = select.options[select.selectedIndex];
+        const container = document.getElementById('contenedor-participantes-dinamicos');
+        container.innerHTML = '';
+    
+        if (!selectedOption || !selectedOption.dataset.stages) return;
+    
+        try {
+            const stages = JSON.parse(selectedOption.dataset.stages);
+            const dynamicStages = stages.filter(s => s.is_dynamic);
+    
+            if (dynamicStages.length > 0) {
+                let html = '<div class="alert alert-warning"><h6>Participantes Requeridos para Etapas Dinámicas:</h6>';
+                const primerSelect = document.querySelector('[name="stage_users_1[]"]');
+                const optionsHtml = primerSelect ? primerSelect.innerHTML : '';
+    
+                dynamicStages.forEach(st => {
+                    html += `
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Etapa ${st.order}: ${st.name}</label>
+                            <select name="dynamic_users_${st.id}[]" class="form-select form-select-sm" multiple required>
+                                ${optionsHtml}
+                            </select>
+                            <div class="form-text">Seleccione uno o más usuarios responsables para esta etapa.</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
+        } catch (e) {
+            console.error("Error al parsear etapas dinámicas:", e);
+        }
+    }
+    function toggleParticipantesDinamicos(checkbox, stageId) {
+        const card = checkbox.closest('.stage-card');
+        const selectUsuarios = card.querySelector('.stage-users-select');
 
-function agregarCampo() {
-    const tbody = document.getElementById('contenedor-campos');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td><input type="text" name="field_label[]" class="form-control form-control-sm" placeholder="Pregunta" required></td>
-        <td>
-            <select name="field_type[]" class="form-select form-select-sm">
-                <option value="TEXT">Texto Corto</option>
-                <option value="TEXTAREA">Texto Largo</option>
-                <option value="FILE">Archivo Adjunto</option>
-                <option value="DATE">Fecha</option>
-                <option value="NUMBER">Número</option>
-            </select>
-        </td>
-        <td><input type="number" name="field_stage_index[]" class="form-control form-control-sm etapa-ref" value="1" min="1"></td>
-        <td><input type="text" name="field_docx_tag[]" class="form-control form-control-sm" placeholder="tag_variable"></td>
-        <td><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">×</button></td>
-    `;
-    tbody.appendChild(tr);
-}
-</script>
+        if (checkbox.checked) {
+            // Si es dinámico, quitamos el required, limpiamos la selección y deshabilitamos el select
+            selectUsuarios.removeAttribute('required');
+            selectUsuarios.value = '';
+            // Si usas selects múltiples, deseleccionamos todas las opciones:
+            Array.from(selectUsuarios.options).forEach(opt => opt.selected = false);
+            selectUsuarios.disabled = true;
+            selectUsuarios.classList.add('bg-white', 'text-muted');
+        } else {
+            // Si no es dinámico, volvemos a exigir usuarios fijos
+            selectUsuarios.setAttribute('required', 'required');
+            selectUsuarios.disabled = false;
+            selectUsuarios.classList.remove('bg-white', 'text-muted');
+        }
+    }
+    
+    function procesarDocumentoWord(input) {
+        if (!input.files || !input.files[0]) return;
+        
+        const documentRow = input.closest('.document-row');
+        const container = documentRow.querySelector('.mapeo-etiquetas-container');
+        const formData = new FormData();
+        formData.append('doc_file', input.files[0]);
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+        fetch("{% url 'extraer_etiquetas_ajax' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            container.innerHTML = '';
+            if (!data.etiquetas || data.etiquetas.length === 0) {
+                container.innerHTML = '<p class="text-danger small mb-0">No se encontraron etiquetas <code>{{etiqueta}}</code> en este documento.</p>';
+                return;
+            }
+    
+            let opcionesEtapas = '';
+            const stageCards = document.querySelectorAll('.stage-card');
+            stageCards.forEach((card, index) => {
+                let num = index + 1;
+                let nombreInput = card.querySelector('.stage-name-input');
+                let nombre = nombreInput ? nombreInput.value.trim() || `Etapa ${num}` : `Etapa ${num}`;
+                opcionesEtapas += `<option value="${num}">Etapa ${num}: ${nombre}</option>`;
+            });
+    
+            data.etiquetas.forEach((tag) => {
+                const row = document.createElement('div');
+                row.className = 'row g-2 mb-2 align-items-center';
+                row.innerHTML = `
+                    <div class="col-md-3">
+                        <input type="hidden" name="map_key[]" value="${tag}">
+                        <span class="badge bg-secondary font-monospace"><code>&#123;&#123;${tag}&#125;&#125;</code></span>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="map_label[]" class="form-control form-control-sm" value="¿Cuál es el valor para ${tag}?" required>
+                    </div>
+                    <div class="col-md-5">
+                        <select name="map_stage_index[]" class="form-select form-select-sm" required>
+                            ${opcionesEtapas}
+                        </select>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Error al extraer etiquetas:', error);
+            container.innerHTML = '<p class="text-danger small mb-0">Error al procesar el archivo.</p>';
+        });
+    }
+    </script>
 {% endblock %}

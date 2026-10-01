@@ -236,8 +236,8 @@ DATABASES = {
     }
 }
 
-LANGUAGE_CODE = 'es'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'es-CR'
+TIME_ZONE = 'America/Costa_Rica'
 USE_I18N = True
 USE_TZ = True
 

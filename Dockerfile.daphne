@@ -7,8 +7,11 @@ ENV PYTHONUNBUFFERED=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-freefont-ttf \
     postgresql-client \
+    libssl-dev \
+    libffi-dev \
     python3-dev \
     build-essential \
+    cargo \
     pkg-config \
     curl \
     && rm -rf /var/lib/apt/lists/*
