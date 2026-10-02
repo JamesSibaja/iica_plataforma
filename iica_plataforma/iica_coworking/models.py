@@ -3,8 +3,6 @@ from django.contrib.auth.models import User
 from secap.models import Proyecto
 from django.utils import timezone
 from datetime import time
-from secap.models import Proyecto
-
 
 
 # -------------------------------------------------------
@@ -45,6 +43,9 @@ class OKRResultadoClave(models.Model):
     valor_inicial = models.FloatField(default=0)
     valor_objetivo = models.FloatField()
     valor_actual = models.FloatField(default=0)
+    
+    # Campo para deshabilitar KRs antiguos conservando el registro de forma sutil
+    deshabilitado = models.BooleanField(default=False)
 
     def progreso(self):
         if self.valor_objetivo == 0:
@@ -52,22 +53,15 @@ class OKRResultadoClave(models.Model):
         return (self.valor_actual / self.valor_objetivo) * 100
 
     def estado_color(self):
-
         p = self.progreso()
-
-        if p >= 80:
-            return 0
-        elif p >= 60:
-            return 1
-        elif p >= 40:
-            return 2
-        elif p >= 20:
-            return 3
-        else:
-            return 4
+        if p >= 80: return 0
+        elif p >= 60: return 1
+        elif p >= 40: return 2
+        elif p >= 20: return 3
+        else: return 4
 
     def __str__(self):
-        return self.descripcion
+        return f"{self.descripcion} {'(Inactivo)' if self.deshabilitado else ''}"
 
 
 # -------------------------------------------------------
@@ -221,6 +215,83 @@ class Tarea(models.Model):
     def __str__(self):
         return self.titulo
 
+
+# -------------------------------------------------------
+# CHECKLIST DE LA TAREA (Subtareas rápidas)
+# -------------------------------------------------------
+class TareaChecklist(models.Model):
+    tarea = models.ForeignKey(
+        Tarea,
+        on_delete=models.CASCADE,
+        related_name="checklist"
+    )
+    texto = models.CharField(max_length=250)
+    completado = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{'[X]' if self.completado else '[ ]'} {self.texto}"
+
+
+# -------------------------------------------------------
+# ARCHIVOS ADJUNTOS DE REFERENCIA PARA LA TAREA
+# -------------------------------------------------------
+class TareaArchivo(models.Model):
+    tarea = models.ForeignKey(
+        Tarea,
+        on_delete=models.CASCADE,
+        related_name="archivos"
+    )
+    archivo = models.FileField(upload_to="tareas_referencias/")
+    nombre = models.CharField(max_length=200, blank=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nombre or self.archivo.name
+
+
+# -------------------------------------------------------
+# BITÁCORA DE AVANCES (HISTORIAL CON IMPACTO)
+# -------------------------------------------------------
+class TareaBitacora(models.Model):
+    tarea = models.ForeignKey(
+        Tarea,
+        on_delete=models.CASCADE,
+        related_name="bitacoras"
+    )
+    autor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="bitacoras_creadas"
+    )
+    texto = models.TextField()
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    # Adjunto opcional específico de la entrada de bitácora (evidencias de campo, fotos, etc.)
+    archivo_adjunto = models.FileField(upload_to="bitacoras_evidencias/", blank=True, null=True)
+
+    # Opcionales para actualizar metas numéricas de forma ágil desde la bitácora:
+    # 1. Si la tarea está vinculada a un Resultado Clave (OKR)
+    actualizar_kr = models.ForeignKey(
+        OKRResultadoClave,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="entradas_bitacora"
+    )
+    nuevo_valor_kr = models.FloatField(null=True, blank=True)
+
+    # 2. O si está vinculada a un Indicador de Proyecto SECAP (asumiendo que Proyecto tiene indicadores o se gestiona vía campo numérico de aporte)
+    aporte_indicador_proyecto = models.FloatField(
+        null=True, 
+        blank=True, 
+        help_text="Valor numérico a sumar al indicador del proyecto vinculado si aplica."
+    )
+
+    def __str__(self):
+        return f"Bitácora de {self.autor.username if self.autor else 'Sistema'} - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
+
+
 # =========================
 # CALENDARIO
 # =========================
@@ -255,17 +326,3 @@ class EventoCalendario(models.Model):
     hora_fin = models.TimeField(
         default=time(17, 0)
     )
-
-    categoria = models.CharField(
-        max_length=30,
-        choices=CATEGORIAS,
-        default="reunion"
-    )
-
-    ubicacion = models.CharField(
-        max_length=200,
-        blank=True
-    )
-
-    def __str__(self):
-        return f"{self.usuario.username} - {self.titulo}"

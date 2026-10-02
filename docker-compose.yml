@@ -14,6 +14,7 @@ services:
       POSTGRES_DB: iica_plataforma_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: America/Costa_Rica
     volumes:
       - db_data:/var/lib/postgresql/data
     networks:
@@ -31,6 +32,8 @@ services:
     restart: unless-stopped
     env_file:
     - .env 
+    environment:
+      - TZ=America/Costa_Rica
     build:
       context: .
       dockerfile: Dockerfile.gunicorn
@@ -51,6 +54,8 @@ services:
     restart: unless-stopped
     env_file:
     - .env 
+    environment:
+      - TZ=America/Costa_Rica
     build:
       context: .
       dockerfile: Dockerfile.daphne
@@ -67,6 +72,8 @@ services:
     restart: unless-stopped
     env_file:
     - .env 
+    environment:
+      - TZ=America/Costa_Rica
     build:
       context: .
       dockerfile: Dockerfile.celery
@@ -100,6 +107,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - TZ=America/Costa_Rica
     build:
       context: .
       dockerfile: Dockerfile.celery

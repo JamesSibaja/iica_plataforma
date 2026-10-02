@@ -51,8 +51,7 @@ class EventoCalendarioInline(admin.TabularInline):
         "fecha",
         "hora_inicio",
         "hora_fin",
-        "categoria",
-        "ubicacion",
+        "detalle",
     )
 
 
@@ -230,12 +229,9 @@ class EventoCalendarioAdmin(admin.ModelAdmin):
         "fecha",
         "hora_inicio",
         "hora_fin",
-        "categoria",
-        "ubicacion",
     )
 
     list_filter = (
-        "categoria",
         "fecha",
         "usuario",
     )
@@ -243,7 +239,6 @@ class EventoCalendarioAdmin(admin.ModelAdmin):
     search_fields = (
         "titulo",
         "detalle",
-        "ubicacion",
         "usuario__username",
         "usuario__first_name",
         "usuario__last_name",

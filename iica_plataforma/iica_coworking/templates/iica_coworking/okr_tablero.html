@@ -4,442 +4,461 @@
 {% block content %}
 
 <style>
-
-    /* ===== SIDEBAR ===== */
-    .sidebar {
-        background: white;
-        border-radius: 14px;
-        padding: 20px;
-        box-shadow: 0 4px 14px rgba(0,0,0,.12);
-    }
-    
-    .tabla-scroll {
-        max-height: calc(65vh - 0px);
-        overflow-y: auto;
-    }
-    
-    .sidebar h3 {
-        color: var(--iica-azul);
-        font-weight: 800;
-        margin-bottom: 15px;
-        text-align: center;
-    }
-    
-    /* ===== ITEMS ===== */
-    .proyecto-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 12px;
-        border-radius: 10px;
-        margin-bottom: 6px;
-        cursor: pointer;
-        transition: background .15s ease;
-    }
-    
-    .proyecto-item:hover {
-        background: rgba(79,163,209,.10);
-    }
-    
-    .proyecto-active {
-        background: var(--iica-azul);
-        color: white;
-    }
-    
-    .proyecto-nombre {
-        font-weight: 600;
-        font-size: .95rem;
-    }
-    
-    /* ===== INDICADOR GENERAL ===== */
-    .estado-general {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-    
-    /* Escala */
-    .estado-0 { background: var(--iica-verde); }
-    .estado-1 { background: var(--iica-verde-lima); }
-    .estado-2 { background: var(--iica-amarillo); }
-    .estado-3 { background: var(--iica-naranja); }
-    .estado-4 { background: var(--iica-rojo); }
-    
-    /* ===== TABS ===== */
-    .nav-pills .nav-link {
-        font-weight: 600;
-        color: var(--iica-azul);
-    }
-    
-    .nav-pills .nav-link.active {
-        background: var(--iica-azul);
-    }
-    
-    
     :root {
         --iica-azul: #00589C;
+        --iica-azul-oscuro: #003e6e;
         --iica-verde: #00a380;
         --iica-verde-lima: #8db400;
         --iica-amarillo: #fceb07;
         --iica-naranja: #ff8d30;
         --iica-rojo: #fd1b23;
-        --gris-fondo: #F4F4F4;
-        --gris-borde: #DDDDDD;
+        --gris-fondo: #F8F9FA;
+        --gris-borde: #E5E7EB;
+        --sombra-suave: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
     }
-    
-    /* ===== CONTENEDOR GENERAL ===== */
+
     .main-container {
         min-height: calc(100vh - 100px);
         background: var(--gris-fondo);
-        padding: 40px;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: var(--sombra-suave);
+    }
+    /* =========================
+    TABS
+    ========================= */
+    .nav-pills .nav-link{
+        font-weight:600;
+        color:var(--iica-azul);
+    }
+
+    .nav-pills .nav-link.active{
+        background:var(--iica-azul);
+    }
+    /* Tarjetas de Columnas (Paneles OKR) */
+    .okr-column-card {
+        background: white;
         border-radius: 16px;
-        box-shadow: 0 8px 25px rgba(0,0,0,.15);
-    }
-    
-    /* ===== SIDEBAR ===== */
-    /* .sidebar {
-        background: white;
-        border-radius: 14px;
-        padding: 20px;
-        box-shadow: 0 4px 14px rgba(0,0,0,.12);
-    }
-    
-    .sidebar h3 {
-        color: var(--iica-azul);
-        font-weight: 800;
-        margin-bottom: 18px;
-        text-align: center;
-    } */
-    /* Header fijo */
-    .proyectos-table thead th {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-    }
-    
-    .proyecto-item {
-        padding: 12px 14px;
-        border-radius: 10px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all .2s ease;
-    }
-    
-    .semana-actual {
-        color: #ff8800;
-        font-weight: 700;
-        text-shadow: 0 0 0.5px currentColor;
-    }
-    
-    
-    .proyecto-item:hover {
-        background: rgba(79,163,209,.12);
-    }
-    
-    .proyecto-active {
-        background: var(--iica-azul);
-        color: white;
-    }
-    
-    /* ===== TITULO ===== */
-    .titulo-proyecto {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: var(--iica-azul);
-        margin-bottom: 25px;
-    }
-    
-    /* ===== TABLA ===== */
-    .tabla-indicadores {
-        width: 100%;
-        background: white;
-        border-radius: 14px;
-        border-collapse: collapse;
+        border: 1px solid var(--gris-borde);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+        display: flex;
+        flex-direction: column;
+        height: 68vh;
         overflow: hidden;
-        box-shadow: 0 4px 14px rgba(0,0,0,.12);
     }
-    
-    .tabla-indicadores thead {
-        background: var(--iica-azul);
-        color: white;
-    }
-    
-    .tabla-indicadores th,
-    .tabla-indicadores td {
-        padding: 10px;
-        text-align: center;
+
+    .okr-column-header {
+        padding: 18px 20px;
         border-bottom: 1px solid var(--gris-borde);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #ffffff;
     }
-    
-    .tabla-indicadores th:first-child,
-    .tabla-indicadores td:first-child {
-        text-align: left;
-        padding-left: 16px;
+
+    .okr-column-header h3 {
+        color: var(--iica-azul);
+        font-weight: 800;
+        font-size: 1.15rem;
+        margin: 0;
     }
-    
-    /* ===== FILAS ===== */
-    .fila-indicador {
+
+    .tabla-scroll {
+        padding: 15px;
+        overflow-y: auto;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* Elementos individuales (Objetivos, KRs, Iniciativas) */
+    .okr-item {
+        background: #ffffff;
+        border: 1px solid var(--gris-borde);
+        border-radius: 12px;
+        padding: 14px;
         cursor: pointer;
-        transition: background .15s ease;
+        transition: all 0.2s ease;
+        position: relative;
     }
-    
-    .fila-indicador:hover {
-        background: rgba(79,163,209,.08);
+    .okr-item:hover {
+        border-color: var(--iica-azul);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,88,156,0.08);
     }
-    
-    /* ===== CELDAS DE ESTADO ===== */
-    .celda {
-        width: 24px;
-        height: 24px;
+    .okr-item.active {
+        background: linear-gradient(135deg, #00589C 0%, #004375 100%);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 6px 15px rgba(0,88,156,0.25);
+    }
+    .okr-item.active .text-muted,
+    .okr-item.active small {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    /* Estilos para KRs Deshabilitados / Históricos de forma sutil */
+    .okr-item.deshabilitado {
+        background: #f1f3f5;
+        border-style: dashed;
+        border-color: #cbd5e1;
+        opacity: 0.7;
+    }
+    .okr-item.deshabilitado:hover {
+        border-color: #94a3b8;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* Bolita indicadora de estado */
+    .estado-general {
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
-        margin: auto;
-        /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.596); */
-        box-shadow: 0 0px 4px rgba(0, 0, 0, 0.596);
-    
-        box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.74);
+        display: inline-block;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.8);
     }
-    
-    .celda.actual {
-        width: 30px;
-        height: 30px;    
-        border-radius: 50%;
-        box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.74);
-    }
-    
-    .celda.futuro {
-        opacity: .75;
-        width: 15px;
-        height: 15px;
-        box-shadow: 0 0px 3px rgba(0, 0, 0, 0.596);
-    }
-    
-    /* Escala de colores */
     .estado-0 { background: var(--iica-verde); }
     .estado-1 { background: var(--iica-verde-lima); }
     .estado-2 { background: var(--iica-amarillo); }
     .estado-3 { background: var(--iica-naranja); }
     .estado-4 { background: var(--iica-rojo); }
-    
-    /* ===== PANEL LATERAL ===== */
-    .panel-lateral {
-        background: white;
-        border-radius: 14px;
-        padding: 20px;
-        min-height: 300px;
-        box-shadow: 0 4px 14px rgba(0,0,0,.12);
+
+    /* Estilos específicos de valores de KRs */
+    .kr-values {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        background: rgba(0,0,0,0.04);
+        padding: 3px 8px;
+        border-radius: 6px;
     }
-    
-    /* ===== BOTONES ===== */
-    
-    
-    .btn-container {
-        margin-top: 35px;
-        display: flex;
-        justify-content: center;
-        gap: 25px;
+    .okr-item.active .kr-values {
+        background: rgba(255,255,255,0.15);
+        color: white;
     }
-    
-    .btn-iica {
-        padding: 14px 26px;
-        border-radius: 10px;
-        font-size: 1.15rem;
-        font-weight: bold;
+
+    /* Botones de acción rápida en cabeceras */
+    .btn-add-item {
+        background: var(--iica-verde);
         color: white;
         border: none;
-        background: var(--iica-azul);
+        border-radius: 8px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        transition: background 0.2s;
     }
-    
-    .btn-crear {
-        background: var(--iica-verde);
+    .btn-add-item:hover {
+        background: #008f72;
+        color: white;
     }
-    </style>
+
+    /* Responsivo personalizado */
+    @media (max-width: 992px) {
+        .okr-column-card { height: auto; min-height: 400px; }
+    }
+</style>
 
 <div class="franja_baja4"></div>
 
 <div class="main-container">
 
-<!-- ===== TABS OKR / KANBAN ===== -->
+    <!-- Navegación de Pestañas OKR / Kanban / Calendario -->
+    <!-- TABS -->
+    <ul class="nav nav-pills mb-4">
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'okr_kanban' %}">
+                Kanban
+            </a>
+        </li>
 
-<ul class="nav nav-pills mb-4">
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'okr_kanban' %}">
-            Kanban
-        </a>
-    </li>
+        <li class="nav-item">
+            <a class="nav-link " href="{% url 'calendario' %}">
+                Calendario
+            </a>
+        </li>
 
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'calendario' %}">
-            Calendario
-        </a>
-    </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="{% url 'okr_tablero' %}">
+                OKR
+            </a>
+        </li>
+    </ul>
 
-    <li class="nav-item">
-        <a class="nav-link active" href="{% url 'okr_tablero' %}">
-            OKR
-        </a>
-    </li>
-</ul>
+    <div class="row g-4">
 
+        <!-- ================================================= -->
+        <!-- COLUMNA 1: OBJETIVOS -->
+        <!-- ================================================= -->
+        <div class="col-lg-4">
+            <div class="okr-column-card">
+                <div class="okr-column-header">
+                    <h3>Objetivos</h3>
+                    <button class="btn-add-item" data-bs-toggle="modal" data-bs-target="#modalCrearObjetivo" title="Nuevo Objetivo">+</button>
+                </div>
+                <div class="tabla-scroll">
+                    {% for obj in objetivos %}
+                    <div class="okr-item {% if objetivo_sel and objetivo_sel.id == obj.id %}active{% endif %}"
+                         onclick="location.href='?objetivo={{obj.id}}'">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <span class="estado-general estado-0"></span>
+                            <span class="badge bg-light text-dark fw-normal" style="font-size: 0.7rem;">👤 {{ obj.responsable.get_full_name|default:obj.responsable.username|default:"Sin asignar" }}</span>
+                        </div>
+                        <div class="fw-bold fs-6 mb-1">{{ obj.titulo }}</div>
+                        <div class="small text-muted text-truncate">{{ obj.descripcion|default:"Sin descripción complementaria." }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5 text-muted">
+                        <p class="small">No hay objetivos registrados.</p>
+                        <button class="btn btn-sm btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalCrearObjetivo">Crear primer objetivo</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
-<div class="row g-4">
+        <!-- ================================================= -->
+        <!-- COLUMNA 2: RESULTADOS CLAVE (KRs) -->
+        <!-- ================================================= -->
+        <div class="col-lg-4">
+            <div class="okr-column-card">
+                <div class="okr-column-header">
+                    <h3>Resultados Clave</h3>
+                    {% if objetivo_sel %}
+                    <button class="btn-add-item" data-bs-toggle="modal" data-bs-target="#modalCrearKr" title="Nuevo KR">+</button>
+                    {% endif %}
+                </div>
+                <div class="tabla-scroll">
+                    {% if objetivo_sel %}
+                        {% for kr in resultados %}
+                        <div class="okr-item {% if kr_sel and kr_sel.id == kr.id %}active{% endif %} {% if kr.deshabilitado %}deshabilitado{% endif %}"
+                             onclick="location.href='?objetivo={{objetivo_sel.id}}&kr={{kr.id}}'">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="estado-general estado-{{ kr.estado_color }}"></span>
+                                <span class="kr-values">Progreso: <strong>{{ kr.valor_actual|floatformat:1 }}</strong> / {{ kr.valor_objetivo|floatformat:1 }}</span>
+                            </div>
+                            <div class="fw-semibold small mb-1">{{ kr.descripcion }}</div>
+                            {% if kr.deshabilitado %}
+                            <div class="text-muted" style="font-size: 0.65rem; font-style: italic;">⚠️ Resultado Clave deshabilitado (Histórico)</div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5 text-muted">
+                            <p class="small">Este objetivo no tiene Resultados Clave aún.</p>
+                            <button class="btn btn-sm btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalCrearKr">Añadir KR</button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <p class="small">Selecciona un objetivo a la izquierda para visualizar sus Resultados Clave.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
 
-<!-- ================================= -->
-<!-- COLUMNA 1 OBJETIVOS -->
-<!-- ================================= -->
+        <!-- ================================================= -->
+        <!-- COLUMNA 3: INICIATIVAS -->
+        <!-- ================================================= -->
+        <div class="col-lg-4">
+            <div class="okr-column-card">
+                <div class="okr-column-header">
+                    <h3>Iniciativas</h3>
+                    {% if kr_sel %}
+                    <button class="btn-add-item" data-bs-toggle="modal" data-bs-target="#modalCrearIniciativa" title="Nueva Iniciativa">+</button>
+                    {% endif %}
+                </div>
+                <div class="tabla-scroll">
+                    {% if kr_sel %}
+                        {% for ini in iniciativas %}
+                        <div class="okr-item bg-white border">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <span class="badge bg-secondary text-white" style="font-size: 0.65rem;">Prioridad: {{ ini.prioridad }}</span>
+                                <small class="text-muted">👤 {{ ini.responsable.get_full_name|default:ini.responsable.username|default:"Libre" }}</small>
+                            </div>
+                            <div class="fw-bold text-dark small mb-2">{{ ini.nombre }}</div>
+                            <div class="d-flex flex-wrap gap-1 mt-2">
+                                <span class="badge bg-light text-secondary border">Pend: {{ ini.tareas_pendientes }}</span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">Ejec: {{ ini.tareas_ejecucion }}</span>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Term: {{ ini.tareas_completadas }}</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5 text-muted">
+                            <p class="small">No hay iniciativas vinculadas a este KR.</p>
+                            <button class="btn btn-sm btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalCrearIniciativa">Crear Iniciativa</button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <p class="small">Selecciona un Resultado Clave para gestionar sus iniciativas asociadas.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
 
-<div class="col-md-3">
-
-<div class="sidebar">
-
-<h3>Objetivos</h3>
-
-<div class="tabla-scroll">
-
-{% for obj in objetivos %}
-
-<div class="proyecto-item
-{% if objetivo_sel and objetivo_sel.id == obj.id %}proyecto-active{% endif %}"
-
-onclick="location.href='?objetivo={{obj.id}}'">
-
-<span class="estado-general estado-0"></span>
-
-<span class="proyecto-nombre">
-{{ obj.titulo }}
-</span>
-
+    </div>
 </div>
 
-{% empty %}
+<!-- ================================================= -->
+<!-- MODALES DE CREACIÓN Y EDICIÓN (LÍDERES, OBJETIVOS, KRS) -->
+<!-- ================================================= -->
 
-<p class="text-muted text-center small mt-3">
-No hay objetivos
-</p>
-
-{% endfor %}
-
+<!-- Modal Crear Objetivo -->
+<div class="modal fade" id="modalCrearObjetivo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="{% url 'okr_crear_objetivo' %}">
+                {% csrf_token %}
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold text-primary">Nuevo Objetivo Estratégico</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Título del Objetivo:</label>
+                        <input type="text" name="titulo" class="form-control" required placeholder="Ej. Expandir la cobertura institucional...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Descripción detallada:</label>
+                        <textarea name="descripcion" class="form-control" rows="3" placeholder="Contexto y alcance..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Representante (Líder / Jefe responsable):</label>
+                        <select name="responsable" class="form-select">
+                            <option value="">-- Sin representante asignado --</option>
+                            {% for u in usuarios_disponibles %}
+                            <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Fecha Inicio:</label>
+                            <input type="date" name="fecha_inicio" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Fecha Fin:</label>
+                            <input type="date" name="fecha_fin" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Guardar Objetivo</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
-</div>
-</div>
 
-
-<!-- ================================= -->
-<!-- COLUMNA 2 RESULTADOS CLAVE -->
-<!-- ================================= -->
-
-<div class="col-md-4">
-
-<div class="sidebar">
-
-<h3>Resultados Clave</h3>
-
-<div class="tabla-scroll">
-
+<!-- Modal Crear Resultado Clave (KR) -->
 {% if objetivo_sel %}
-
-{% for kr in resultados %}
-
-<div class="proyecto-item
-{% if kr_sel and kr_sel.id == kr.id %}proyecto-active{% endif %}"
-
-onclick="location.href='?objetivo={{objetivo_sel.id}}&kr={{kr.id}}'">
-
-<span class="estado-general estado-{{ kr.estado_color }}"></span>
-
-<span class="proyecto-nombre">
-{{ kr.descripcion }}
-</span>
-
+<div class="modal fade" id="modalCrearKr" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="{% url 'okr_crear_kr' %}">
+                {% csrf_token %}
+                <!-- Añade este campo oculto para que la vista sepa a qué objetivo pertenece -->
+                <input type="hidden" name="objetivo_id" value="{{ objetivo_sel.id }}">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold text-primary">Nuevo Resultado Clave (KR)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Descripción del KR:</label>
+                        <input type="text" name="descripcion" class="form-control" required placeholder="Ej. Aumentar en un 40% las asistencias técnicas...">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <label class="form-label small fw-bold">Valor Inicial:</label>
+                            <input type="number" step="any" name="valor_inicial" class="form-control" value="0" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small fw-bold">Valor Objetivo:</label>
+                            <input type="number" step="any" name="valor_objetivo" class="form-control" required placeholder="100">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small fw-bold">Valor Actual:</label>
+                            <input type="number" step="any" name="valor_actual" class="form-control" value="0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="deshabilitado" class="form-check-input" id="checkDeshabilitado">
+                        <label class="form-check-label small text-muted" for="checkDeshabilitado">Deshabilitar (Mantener de forma sutil solo como registro histórico)</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Guardar Resultado Clave</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
-
-{% endfor %}
-
-{% else %}
-
-<p class="text-muted text-center small mt-3">
-Selecciona un objetivo
-</p>
-
 {% endif %}
 
-</div>
-</div>
-</div>
-
-
-<!-- ================================= -->
-<!-- COLUMNA 3 INICIATIVAS -->
-<!-- ================================= -->
-
-<div class="col-md-5">
-
-<div class="sidebar">
-
-<h3>Iniciativas</h3>
-
-<div class="tabla-scroll">
-
+<!-- Modal Crear Iniciativa -->
 {% if kr_sel %}
-
-{% for ini in iniciativas %}
-
-<div class="iniciativa">
-
-<strong>{{ ini.nombre }}</strong>
-
-<div class="small text-muted">
-
-KR vinculados: {{ ini.resultados.count }}
-
+<div class="modal fade" id="modalCrearIniciativa" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="{% url 'okr_crear_iniciativa' %}">
+                {% csrf_token %}
+                <!-- Campos ocultos necesarios -->
+                <input type="hidden" name="objetivo_id" value="{{ objetivo_sel.id }}">
+                
+                <!-- Si quieres que por defecto quede marcado el KR actual seleccionado -->
+                <input type="hidden" name="resultados" value="{{ kr_sel.id }}">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold text-primary">Nueva Iniciativa Asociada</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nombre de la Iniciativa:</label>
+                        <input type="text" name="nombre" class="form-control" required placeholder="Ej. Taller regional de capacitación...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Descripción:</label>
+                        <textarea name="descripcion" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Prioridad:</label>
+                            <select name="prioridad" class="form-select">
+                                <option value="Alta">Alta</option>
+                                <option value="Media" selected>Media</option>
+                                <option value="Baja">Baja</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Responsable:</label>
+                            <select name="responsable" class="form-select">
+                                <option value="">-- Seleccionar --</option>
+                                {% for u in usuarios_disponibles %}
+                                <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Guardar Iniciativa</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
-
-<div class="mt-2">
-
-<span class="badge bg-secondary">
-Pendientes {{ ini.tareas_pendientes }}
-</span>
-
-<span class="badge bg-primary">
-En ejecución {{ ini.tareas_ejecucion }}
-</span>
-
-<span class="badge bg-warning">
-En espera {{ ini.tareas_espera }}
-</span>
-
-<span class="badge bg-success">
-Terminadas {{ ini.tareas_completadas }}
-</span>
-
-</div>
-
-</div>
-
-{% empty %}
-
-<p class="text-muted small text-center mt-3">
-No hay iniciativas
-</p>
-
-{% endfor %}
-
-{% else %}
-
-<p class="text-muted text-center small mt-3">
-Selecciona un resultado clave
-</p>
-
 {% endif %}
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-</div>
 
 {% endblock %}

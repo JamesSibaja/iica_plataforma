@@ -10,17 +10,19 @@ from django.core.files import File
 from django.http import JsonResponse
 import mimetypes
 from django.http import Http404, HttpResponse
-from .models import GeneratedDocument
+from django.db.models import Q
 
 from .utils import extraer_etiquetas_docx, rellenar_y_generar_documentos
 
 from .models import (
     WorkflowTemplate,
     StageTemplate,
+    StageTemplateResource,
     WorkflowExecution,
     StageExecution,
     FormSubmission,
     FormField,
+    GeneratedDocument,
     FieldValue,
     DocumentFieldMapping,
     DocumentTemplate  
@@ -28,27 +30,54 @@ from .models import (
 
 @login_required
 def workflows_ejecucion(request, execution_id=None):
-    """Vista principal con soporte para filtrado de campos y mapeos de documentos por etapa."""
-    # ... [código anterior de filtros permanece igual] ...
-    modo = request.GET.get("modo", "mis_flujos")
+    """Vista principal con soporte para filtrado de campos, mapeos, aislamiento y privilegios estrictos."""
+    modo = request.GET.get("modo", "asignados")
     estado_filtro = request.GET.get("estado", "en_curso")
+    busqueda = request.GET.get("q", "").strip()
 
     base_mis = WorkflowExecution.objects.filter(initiated_by=request.user)
     base_asignados = WorkflowExecution.objects.filter(current_stage_execution__assigned_users=request.user)
 
-    if estado_filtro == "finalizados":
-        mis_flujos = base_mis.filter(status__in=['COMPLETED', 'REJECTED'])
-        flujos_asignados = base_asignados.filter(status__in=['COMPLETED', 'REJECTED'])
-    else:
-        mis_flujos = base_mis.filter(status='IN_PROGRESS')
+    count_asignados = base_asignados.filter(status='IN_PROGRESS').count()
+    count_mis_activos = base_mis.filter(status='IN_PROGRESS').count()
+    count_mis_historial = base_mis.filter(status__in=['COMPLETED', 'REJECTED']).count()
+
+    if modo == "asignados":
+        mis_flujos = WorkflowExecution.objects.none()
         flujos_asignados = base_asignados.filter(status='IN_PROGRESS')
+    else:
+        flujos_asignados = WorkflowExecution.objects.none()
+        if estado_filtro == "finalizados":
+            mis_flujos = base_mis.filter(status__in=['COMPLETED', 'REJECTED'])
+        else:
+            mis_flujos = base_mis.filter(status='IN_PROGRESS')
+
+    if busqueda:
+        if modo == "asignados":
+            flujos_asignados = flujos_asignados.filter(
+                Q(id__icontains=busqueda) | 
+                Q(name__icontains=busqueda) | 
+                Q(workflow_template__name__icontains=busqueda)
+            )
+        else:
+            mis_flujos = mis_flujos.filter(
+                Q(id__icontains=busqueda) | 
+                Q(name__icontains=busqueda) | 
+                Q(workflow_template__name__icontains=busqueda)
+            )
 
     available_templates = WorkflowTemplate.objects.filter(is_active=True)
     all_users = User.objects.select_related('userprofile').all()
 
     execution_sel = None
     if execution_id:
-        execution_sel = get_object_or_404(WorkflowExecution, id=execution_id)
+        execution_qs = WorkflowExecution.objects.filter(id=execution_id)
+        if not request.user.is_staff:
+            execution_qs = execution_qs.filter(
+                Q(initiated_by=request.user) | 
+                Q(stage_history__assigned_users=request.user)
+            ).distinct()
+        execution_sel = get_object_or_404(execution_qs, id=execution_id)
     elif modo == "asignados" and flujos_asignados.exists():
         execution_sel = flujos_asignados.first()
     elif mis_flujos.exists():
@@ -60,39 +89,74 @@ def workflows_ejecucion(request, execution_id=None):
         and execution_sel.current_stage_execution 
         and execution_sel.current_stage_execution.assigned_users.filter(id=request.user.id).exists()
     )
+    
+    puede_ver_actual = es_iniciador or es_asignado_actual or request.user.is_staff
 
-    etapas_historial = []
+    etapas_historial_completo = []
+    historial_respuestas = []
     form_fields = []
     doc_mappings = []
     form_values_map = {}
+    stage_resources = []
+    ocultar_historial_respuestas = False
 
     if execution_sel:
-        etapas_historial = execution_sel.stage_history.all().order_by('sequence_number')
+        etapas_historial_completo = execution_sel.stage_history.all().order_by('sequence_number')
+        current_st_tmpl = execution_sel.current_stage_execution.stage_template if execution_sel.current_stage_execution else None
         
-        # Si el flujo está activo y en curso, mostramos solo los de la etapa actual. 
-        # Si ya está finalizado/rechazado (historial), mostramos todos los campos de la plantilla.
-        if execution_sel.status == 'IN_PROGRESS' and execution_sel.current_stage_execution and execution_sel.current_stage_execution.stage_template:
+        # 1. CARGA DE HISTORIAL INDEPENDIENTE: El propietario o staff siempre ven todo el historial acumulado
+        if es_iniciador or request.user.is_staff or execution_sel.status in ['COMPLETED', 'REJECTED']:
+            form_sub = FormSubmission.objects.filter(workflow_execution=execution_sel).first()
+            if form_sub:
+                historial_respuestas = form_sub.values.all().select_related('form_field', 'document_field_mapping', 'filled_in_stage')
+        else:
+            is_isolated_stage = (
+                current_st_tmpl and current_st_tmpl.isolate_previous_history
+            ) or (
+                execution_sel.status == 'IN_PROGRESS' and not es_asignado_actual
+            )
+
+            if is_isolated_stage:
+                ocultar_historial_respuestas = True
+                historial_respuestas = FormSubmission.objects.none()
+            else:
+                form_sub = FormSubmission.objects.filter(workflow_execution=execution_sel).first()
+                if form_sub:
+                    historial_respuestas = form_sub.values.all().select_related('form_field', 'document_field_mapping', 'filled_in_stage')
+
+        # 2. RECURSOS DE LA ETAPA ACTUAL
+        if current_st_tmpl and puede_ver_actual:
+            stage_resources = current_st_tmpl.resources.all()
+
+        # 3. CAMPOS Y MAPEOS: Si el trámite está finalizado, permitimos mapear/ver los campos de la última etapa registrada para consulta
+        target_stage_tmpl = current_st_tmpl
+        if not target_stage_tmpl and execution_sel.status in ['COMPLETED', 'REJECTED'] and etapas_historial_completo.exists():
+            target_stage_tmpl = etapas_historial_completo.last().stage_template
+
+        if execution_sel.status == 'IN_PROGRESS' and es_asignado_actual and current_st_tmpl:
             form_fields = FormField.objects.filter(
                 workflow_template=execution_sel.workflow_template,
-                stage_template=execution_sel.current_stage_execution.stage_template
+                stage_template=current_st_tmpl
             )
             doc_mappings = DocumentFieldMapping.objects.filter(
                 document_template__workflow_template=execution_sel.workflow_template,
-                stage_template=execution_sel.current_stage_execution.stage_template
+                stage_template=current_st_tmpl
             )
-        else:
-            # En el historial (completados o rechazados), mostramos todo el formulario histórico
+        elif execution_sel.status in ['COMPLETED', 'REJECTED'] and (es_iniciador or request.user.is_staff):
+            # En modo histórico para el propietario, cargamos todos los campos asociados al flujo para visualizarlos en modo lectura
             form_fields = FormField.objects.filter(workflow_template=execution_sel.workflow_template)
             doc_mappings = DocumentFieldMapping.objects.filter(document_template__workflow_template=execution_sel.workflow_template)
+        else:
+            form_fields = []
+            doc_mappings = []
         
-        # Recargar los valores guardados usando el ID correcto del campo/mapeo
         for field in form_fields:
             f_val = FieldValue.objects.filter(
                 form_submission__workflow_execution=execution_sel,
                 form_field=field
             ).first()
             if f_val:
-                form_values_map[field.id] = f_val  # Usamos directamente el ID para que coincida con el template
+                form_values_map[field.id] = f_val
                 
         for mapping in doc_mappings:
             f_val = FieldValue.objects.filter(
@@ -100,28 +164,34 @@ def workflows_ejecucion(request, execution_id=None):
                 document_field_mapping=mapping
             ).first()
             if f_val:
-                form_values_map[mapping.id] = f_val  # Usamos directamente el ID
+                form_values_map[mapping.id] = f_val
 
     return render(request, "sig_management/workflows_ejecucion.html", {
         "mis_flujos": mis_flujos,
         "flujos_asignados": flujos_asignados,
+        "count_asignados": count_asignados,
+        "count_mis_activos": count_mis_activos,
+        "count_mis_historial": count_mis_historial,
         "available_templates": available_templates,
         "all_users": all_users,
         "execution_sel": execution_sel,
         "es_iniciador": es_iniciador,
         "es_asignado_actual": es_asignado_actual,
-        "etapas_historial": etapas_historial,
+        "puede_ver_actual": puede_ver_actual,
+        "etapas_historial_completo": etapas_historial_completo,
+        "historial_respuestas": historial_respuestas,
+        "ocultar_historial_respuestas": ocultar_historial_respuestas,
         "modo": modo,
         "estado_filtro": estado_filtro,
         "form_fields": form_fields,
         "doc_mappings": doc_mappings,
         "form_values_map": form_values_map,
+        "stage_resources": stage_resources,
     })
 
 @require_POST
 @login_required
 def retroceder_etapa(request, execution_id):
-    """Retrocede a la etapa anterior utilizando el puntero correspondiente."""
     execution = get_object_or_404(WorkflowExecution, id=execution_id)
     current_stage = execution.current_stage_execution
 
@@ -137,13 +207,11 @@ def retroceder_etapa(request, execution_id):
             new_stage = StageExecution.objects.create(
                 workflow_execution=execution,
                 stage_template=prev_template,
-                previous_execution=current_stage,
                 name=f"[Devuelto] {prev_template.name}",
                 instructions=prev_template.instructions,
                 status='PENDING',
                 sequence_number=current_stage.sequence_number + 1
             )
-            current_stage.next_execution = new_stage
             current_stage.save()
 
             new_stage.assigned_users.set(prev_template.assigned_users.all())
@@ -157,7 +225,6 @@ def retroceder_etapa(request, execution_id):
 @require_POST
 @login_required
 def romper_flujo_ad_hoc(request, execution_id):
-    """Rompe, cancela o desvía una instancia de flujo de manera ad-hoc."""
     execution = get_object_or_404(WorkflowExecution, id=execution_id)
     
     with transaction.atomic():
@@ -177,11 +244,9 @@ def romper_flujo_ad_hoc(request, execution_id):
 
     return redirect("workflows_ejecucion")
 
-
 @require_POST
 @login_required
 def iniciar_nuevo_flujo(request):
-    """Crea una nueva instancia de flujo y asigna participantes dinámicos en sus respectivas etapas."""
     template_id = request.POST.get("workflow_template_id")
     workflow_template = get_object_or_404(WorkflowTemplate, id=template_id)
     instance_name = request.POST.get("instance_name", "").strip() or workflow_template.name
@@ -202,16 +267,17 @@ def iniciar_nuevo_flujo(request):
         first_stage_exec = None
 
         for st in stage_templates:
+            is_first = (st.order == 1)
             stage_exec = StageExecution.objects.create(
                 workflow_execution=execution,
                 stage_template=st,
                 name=st.name,
                 instructions=st.instructions,
                 status='PENDING',
-                sequence_number=st.order
+                sequence_number=st.order,
+                started_at=timezone.now() if is_first else None
             )
 
-            # Asignar usuarios según si es dinámico o estático
             if st.is_dynamic_assignee:
                 selected_users = request.POST.getlist(f"dynamic_users_{st.id}[]")
                 if selected_users:
@@ -219,7 +285,7 @@ def iniciar_nuevo_flujo(request):
             else:
                 stage_exec.assigned_users.set(st.assigned_users.all())
 
-            if st.order == 1:
+            if is_first:
                 first_stage_exec = stage_exec
 
         if first_stage_exec:
@@ -229,60 +295,20 @@ def iniciar_nuevo_flujo(request):
 
     return redirect("workflows_ejecucion_detalle", execution_id=execution.id)
 
-@login_required
-def descargar_documento_generado(request, doc_id):
-    """Permite descargar el documento final generado (PDF o Word con valores reemplazados)."""
-    gen_doc = get_object_or_404(GeneratedDocument, id=doc_id)
-    
-    # Verificar que el usuario tenga permisos (sea iniciador o esté asignado en alguna etapa del flujo)
-    execution = gen_doc.workflow_execution
-    es_participante = (
-        execution.initiated_by == request.user or
-        execution.stage_history.filter(assigned_users=request.user).exists()
-    )
-    
-    if not es_participante and not request.user.is_staff:
-        raise Http404("No tienes permisos para descargar este archivo.")
-
-    file_path = gen_doc.file_path
-    if os.path.exists(file_path):
-        mime_type, _ = mimetypes.guess_type(file_path)
-        with open(file_path, 'rb') as f:
-            response = HttpResponse(f.read(), content_type=mime_type or 'application/octet-stream')
-            
-            # 1. Obtener un nombre base amigable (usando el nombre descriptivo de gen_doc)
-            # Si 'gen_doc' tiene un campo de nombre o está vinculado a una plantilla, úsalo:
-            nombre_base = getattr(gen_doc, 'name', None) or "documento_generado"
-            
-            # O si el nombre viene de una relación, por ejemplo gen_doc.template.name, ajústalo aquí.
-            # Limpiamos espacios y aseguramos la extensión correcta basada en el archivo real
-            _, ext = os.path.splitext(file_path)
-            if not ext:
-                ext = ".docx"
-                
-            # Limpiamos caracteres extraños opcionalmente o dejamos el nombre limpio
-            filename = f"{nombre_base.strip()}{ext}"
-
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            return response
-            
-    raise Http404("El archivo físico no se encuentra en el servidor.")
 
 @require_POST
 @login_required
 def avanzar_etapa(request, execution_id):
-    """Avanza la etapa completando la actual y activando la siguiente en secuencia."""
     execution = get_object_or_404(WorkflowExecution, id=execution_id)
     current_stage = execution.current_stage_execution
 
-    if not current_stage or not current_stage.assigned_users.filter(id=request.user.id).exists():
-        messages.error(request, "No tienes permisos para avanzar esta etapa.")
-        return redirect("workflows_ejecucion_detalle", execution_id=execution.id)
+    if not current_stage or execution.status != 'IN_PROGRESS' or not current_stage.assigned_users.filter(id=request.user.id).exists():
+        messages.error(request, "No tienes permisos para modificar o avanzar esta etapa, o el flujo ya ha concluido.")
+        return redirect("workflows_ejecucion")
 
     with transaction.atomic():
         form_sub, _ = FormSubmission.objects.get_or_create(workflow_execution=execution)
         
-        # 1. Guardar campos generales
         form_fields = FormField.objects.filter(
             workflow_template=execution.workflow_template,
             stage_template=current_stage.stage_template
@@ -303,7 +329,6 @@ def avanzar_etapa(request, execution_id):
                     }
                 )
 
-        # 2. Guardar mapeos de documentos
         doc_mappings = DocumentFieldMapping.objects.filter(
             document_template__workflow_template=execution.workflow_template,
             stage_template=current_stage.stage_template
@@ -330,13 +355,13 @@ def avanzar_etapa(request, execution_id):
         current_stage.comments = request.POST.get("comments", "")
         current_stage.save()
 
-        # Buscar la siguiente etapa en el historial ya creada
-        next_stage = execution.stage_history.filter(sequence_number=current_stage.sequence_number + 1).first()
+        siguiente_sequence_num = current_stage.sequence_number + 1
+        next_stage = execution.stage_history.filter(sequence_number=siguiente_sequence_num).first()
 
         if next_stage:
-            current_stage.next_execution = next_stage
-            current_stage.save()
-
+            next_stage.started_at = timezone.now()
+            next_stage.save()
+            
             execution.current_stage_execution = next_stage
             execution.save()
             messages.success(request, f"Etapa completada. Avanzado a: {next_stage.name}")
@@ -351,10 +376,46 @@ def avanzar_etapa(request, execution_id):
 
     return redirect("workflows_ejecucion_detalle", execution_id=execution.id)
 
+@login_required
+def descargar_documento_generado(request, doc_id):
+    gen_doc = get_object_or_404(GeneratedDocument, id=doc_id)
+    execution = gen_doc.workflow_execution
+    es_participante = (
+        execution.initiated_by == request.user or
+        execution.stage_history.filter(assigned_users=request.user).exists()
+    )
+    
+    if not es_participante and not request.user.is_staff:
+        raise Http404("No tienes permisos para descargar este archivo.")
+
+    file_path = gen_doc.file_path
+    if os.path.exists(file_path):
+        mime_type, _ = mimetypes.guess_type(file_path)
+        with open(file_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type=mime_type or 'application/octet-stream')
+            
+            # 1. Usar una estructura limpia y corta (ej: Tramite_17_docu_flujo) en lugar de nombres muy largos
+            nombre_tramite = f"Tramite_{execution.id}"
+            nombre_doc = gen_doc.name or "documento"
+            
+            # 2. Limpiar caracteres especiales y espacios
+            import re
+            limpiar_texto = lambda t: re.sub(r'[\/*?:"<>|\\#]', '', t).strip().replace(' ', '_')
+            nombre_limpio = f"{limpiar_texto(nombre_tramite)}_{limpiar_texto(nombre_doc)}"
+                  
+            _, ext = os.path.splitext(file_path)
+            if not ext:
+                ext = ".pdf"
+                
+            filename = f"{nombre_limpio}{ext}"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+            
+    raise Http404("El archivo físico no se encuentra en el servidor.")
+
 @require_POST
 @login_required
 def crear_plantilla_flujo(request):
-    """Crea plantilla procesando etapas, soporte de participantes indefinidos y documentos sin etapa global."""
     nombre = request.POST.get("template_name")
     descripcion = request.POST.get("template_description", "")
     
@@ -382,13 +443,15 @@ def crear_plantilla_flujo(request):
                 order_num = index + 1
                 
                 is_dynamic = request.POST.get(f"stage_dynamic_{order_num}") == "on"
+                is_isolated = request.POST.get(f"stage_isolate_{order_num}") == "on"
                 
                 stage = StageTemplate.objects.create(
                     workflow=template,
                     name=est_nombre,
                     instructions=instruccion,
                     order=order_num,
-                    is_dynamic_assignee=is_dynamic
+                    is_dynamic_assignee=is_dynamic,
+                    isolate_previous_history=is_isolated
                 )
                 
                 if not is_dynamic:
@@ -398,13 +461,22 @@ def crear_plantilla_flujo(request):
                     else:
                         stage.assigned_users.add(request.user)
                 
+                res_files = request.FILES.getlist(f"stage_resource_file_{order_num}[]")
+                res_titles = request.POST.getlist(f"stage_resource_title_{order_num}[]")
+                for r_idx, r_file in enumerate(res_files):
+                    r_title = res_titles[r_idx] if r_idx < len(res_titles) and res_titles[r_idx].strip() else r_file.name
+                    StageTemplateResource.objects.create(
+                        stage_template=stage,
+                        title=r_title,
+                        file=r_file
+                    )
+
                 etapas_creadas.append(stage)
 
         if not etapas_creadas:
             messages.error(request, "Debe configurar al menos una etapa válida.")
             return redirect("workflows_ejecucion")
 
-        # Guardar Documentos Word (sin etapa global)
         doc_names = request.POST.getlist("doc_name[]")
         doc_files = request.FILES.getlist("doc_file[]")
         doc_templates_creados = []
@@ -431,7 +503,6 @@ def crear_plantilla_flujo(request):
                     }
                 )
 
-        # Mapeo granular manual de etiquetas por etapa
         map_doc_indices = request.POST.getlist("map_doc_index[]")
         map_keys = request.POST.getlist("map_key[]")
         map_labels = request.POST.getlist("map_label[]")
@@ -461,7 +532,6 @@ def crear_plantilla_flujo(request):
                 }
             )
 
-        # Preguntas manuales adicionales
         labels_campos = request.POST.getlist("field_label[]")
         tipos_campos = request.POST.getlist("field_type[]")
         etapas_asociadas = request.POST.getlist("field_stage_index[]")
@@ -493,11 +563,8 @@ def crear_plantilla_flujo(request):
 @require_POST
 @login_required
 def extraer_etiquetas_ajax(request):
-    """Extrae las etiquetas {{tag}} de un archivo Word subido temporalmente vía AJAX."""
     archivo = request.FILES.get('doc_file')
     if not archivo:
         return JsonResponse({'etiquetas': []})
-    
-    # Usa tu función existente para leer el docx
     etiquetas = extraer_etiquetas_docx(archivo)
     return JsonResponse({'etiquetas': list(etiquetas)})

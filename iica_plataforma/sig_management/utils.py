@@ -93,11 +93,10 @@ def rellenar_y_generar_documentos(execution):
                         if nuevo_texto != cell.text:
                             cell.text = nuevo_texto
 
-            # Nombre de archivo limpio, identificable con nombre de plantilla, ID de ejecución y fecha/hora
+            # Nombre de archivo limpio y corto (ej: NombreDoc_T17.docx)[cite: 20]
             base_filename = os.path.basename(doc_tpl.file.name)
             slug_doc = slugify(doc_tpl.name) or "documento"
-            timestamp_str = timezone.now().strftime("%Y%m%d_%H%M%S")
-            output_filename = f"{slug_doc}_flujo_{execution.id}_{timestamp_str}{os.path.splitext(base_filename)[1]}"
+            output_filename = f"{slug_doc}_T{execution.id}{os.path.splitext(base_filename)[1]}"
             output_path = os.path.join(output_dir, output_filename)
             
             doc.save(output_path)

@@ -13,20 +13,29 @@
     .main-container {
         min-height: calc(100vh - 100px);
         background: var(--iica-gris-fondo);
-        padding: 30px;
+        padding: 20px 30px;
         border-radius: 16px;
         box-shadow: 0 8px 25px rgba(0,0,0,.15);
     }
-
+    .bg-secondary {
+        background-color: rgb(227, 228, 229) !important;
+    }
+    .bg-secondary-2 {
+        background-color: rgb(122, 122, 122) !important;
+    }
+    .code {
+        color: #6633d6;
+    }
     .sidebar {
         background: white;
         border-radius: 14px;
         padding: 20px;
         box-shadow: 0 4px 14px rgba(0,0,0,.12);
+        height: 100%;
     }
 
     .tabla-scroll {
-        max-height: 55vh;
+        max-height: 50vh;
         overflow-y: auto;
     }
 
@@ -34,7 +43,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 14px;
+        padding: 10px 12px;
         border-radius: 10px;
         margin-bottom: 8px;
         cursor: pointer;
@@ -52,12 +61,16 @@
         background: var(--iica-azul) !important;
         color: white !important;
     }
+    .workflow-active .text-muted {
+        color: #e0e0e0 !important;
+    }
 
     .panel-lateral {
         background: white;
         border-radius: 14px;
         padding: 20px;
         box-shadow: 0 4px 14px rgba(0,0,0,.12);
+        height: 100%;
     }
 
     /* Línea de tiempo auditable */
@@ -101,86 +114,111 @@
     
     <!-- BARRA SUPERIOR -->
     <div class="row mb-4 align-items-center">
-        <div class="col-md-6">
+        <div class="col-lg-6">
             <h2 class="fw-bold" style="color: var(--iica-azul);">Gestor Electrónico de Trámites (GET) - IICA</h2>
             <p class="text-muted mb-0">Gestión de flujos mediante listas enlazadas y trazabilidad documental.</p>
         </div>
-        <div class="col-md-6 text-md-end mt-3 mt-md-0">
-            <button class="btn btn-outline-primary fw-bold shadow-sm me-2" data-bs-toggle="modal" data-bs-target="#modalNuevaPlantilla">
+        <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
+            <button class="btn btn-outline-primary fw-bold shadow-sm me-2 mb-2 mb-md-0" data-bs-toggle="modal" data-bs-target="#modalNuevaPlantilla">
                 <i class="bi bi-gear-fill me-1"></i> + Crear Plantilla
             </button>
-            <button class="btn btn-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoFlujo">
+            <button class="btn btn-success fw-bold shadow-sm mb-2 mb-md-0" data-bs-toggle="modal" data-bs-target="#modalNuevoFlujo">
                 <i class="bi bi-play-circle-fill me-1"></i> Iniciar Trámite
             </button>
         </div>
     </div>
 
     <div class="row g-4">
-        <!-- SIDEBAR DE BANDEJAS -->
-        <div class="col-md-3">
+        <!-- SIDEBAR LIMPIO Y CLARO -->
+        <div class="col-lg-4">
             <div class="sidebar">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0" style="color: var(--iica-azul);">Bandeja</h5>
-                    <div class="btn-group btn-group-sm">
-                        <a href="?estado=en_curso" class="btn btn-outline-primary {% if estado_filtro == 'en_curso' %}active{% endif %}">Activos</a>
-                        <a href="?estado=finalizados" class="btn btn-outline-primary {% if estado_filtro == 'finalizados' %}active{% endif %}">Historial</a>
-                    </div>
-                </div>
-
-                <!-- TABS DE NAVEGACIÓN -->
-                <ul class="nav nav-pills nav-fill mb-3" role="tablist">
+                <!-- Navegación principal con nombres precisos -->
+                <ul class="nav nav-pills nav-fill mb-3 bg-light p-1 rounded-3" role="tablist">
+                    <!-- Pestaña Pendientes -->
                     <li class="nav-item">
-                        <button class="nav-link {% if modo == 'mis_flujos' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#panel-mis" type="button">
-                            Mis Trámites ({{ mis_flujos.count }})
-                        </button>
+                        <a href="?modo=asignados{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="nav-link py-1 px-2 small fw-bold {% if modo == 'asignados' %}active bg-primary text-white{% else %}text-dark{% endif %}">
+                            Pendientes <span class="badge {% if modo == 'asignados' %}bg-light text-dark{% else %}bg-warning text-dark{% endif %} ms-1">{{ count_asignados }}</span>
+                        </a>
                     </li>
+                    
+                    <!-- Pestaña Mis Trámites (En curso) -->
                     <li class="nav-item">
-                        <button class="nav-link {% if modo == 'asignados' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#panel-asignados" type="button">
-                            Pendientes <span class="badge bg-warning text-dark">{{ flujos_asignados.count }}</span>
-                        </button>
+                        <a href="?modo=mis_flujos&estado=en_curso{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="nav-link py-1 px-2 small fw-bold {% if modo == 'mis_flujos' and estado_filtro == 'en_curso' %}active bg-primary text-white{% else %}text-dark{% endif %}">
+                            Mis Trámites <span class="badge {% if modo == 'mis_flujos' and estado_filtro == 'en_curso' %}bg-light text-primary{% else %}bg-secondary{% endif %} ms-1">{{ count_mis_activos }}</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Pestaña Historial (Finalizados) -->
+                    <li class="nav-item">
+                        <a href="?modo=mis_flujos&estado=finalizados{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="nav-link py-1 px-2 small fw-bold {% if modo == 'mis_flujos' and estado_filtro == 'finalizados' %}active bg-primary text-white{% else %}text-dark{% endif %}">
+                            Historial <span class="badge {% if modo == 'mis_flujos' and estado_filtro == 'finalizados' %}bg-light text-primary{% else %}bg-secondary{% endif %} ms-1">{{ count_mis_historial }}</span>
+                        </a>
                     </li>
                 </ul>
 
-                <div class="tab-content tabla-scroll">
-                    <!-- MIS FLUJOS -->
-                    <div class="tab-pane fade {% if modo == 'mis_flujos' %}show active{% endif %}" id="panel-mis" role="tabpanel">
+                <!-- BARRA DE BÚSQUEDA -->
+                <form method="GET" action="" class="mb-3">
+                    <input type="hidden" name="modo" value="{{ modo }}">
+                    {% if modo == 'mis_flujos' %}
+                    <input type="hidden" name="estado" value="{{ estado_filtro }}">
+                    {% endif %}
+                    <div class="input-group input-group-sm shadow-sm">
+                        <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Buscar por ID o nombre..." value="{{ request.GET.q }}">
+                        {% if request.GET.q %}
+                        <a href="?modo={{ modo }}{% if modo == 'mis_flujos' %}&estado={{ estado_filtro }}{% endif %}" class="btn btn-outline-secondary" title="Limpiar búsqueda">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                        {% endif %}
+                        <button class="btn btn-primary" type="submit">Filtrar</button>
+                    </div>
+                </form>
+
+                <!-- LISTADO DE ELEMENTOS -->
+                <div class="tabla-scroll pe-1">
+                    {% if modo == 'asignados' %}
+                        <!-- Lista de Pendientes -->
+                        {% for f in flujos_asignados %}
+                        <div class="workflow-item {% if execution_sel and execution_sel.id == f.id %}workflow-active{% endif %}"
+                            onclick="location.href='{% url 'workflows_ejecucion_detalle' f.id %}?modo=asignados{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}'">
+                            <div>
+                                <span class="d-block small fw-bold text-truncate" style="max-width: 180px;">{{ f.name|default:f.workflow_template.name }}</span>
+                                <span class="text-muted" style="font-size: 0.75rem;">Paso: {{ f.current_stage_execution.name|default:"Pendiente" }}</span>
+                            </div>
+                            <span class="badge bg-warning text-dark" style="font-size: 0.6rem;">Atender</span>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-check2-circle text-muted fs-3"></i>
+                            <p class="text-muted small mt-2">No tienes trámites pendientes por atender.</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Lista de Mis Trámites (En curso o Historial) -->
                         {% for f in mis_flujos %}
                         <div class="workflow-item {% if execution_sel and execution_sel.id == f.id %}workflow-active{% endif %}"
-                             onclick="location.href='{% url 'workflows_ejecucion_detalle' f.id %}?modo=mis_flujos&estado={{ estado_filtro }}'">
+                            onclick="location.href='{% url 'workflows_ejecucion_detalle' f.id %}?modo=mis_flujos&estado={{ estado_filtro }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}'">
                             <div>
-                                <span class="d-block small fw-bold">{{ f.workflow_template.name }}</span>
-                                <span class="text-muted" style="font-size: 0.75rem;">ID: #{{ f.id }}</span>
+                                <span class="d-block small fw-bold text-truncate" style="max-width: 180px;">{{ f.name|default:f.workflow_template.name }}</span>
+                                <span class="text-muted" style="font-size: 0.75rem;">ID: #{{ f.id }} | Plantilla: {{ f.workflow_template.name }}</span>
                             </div>
-                            <span class="badge {% if f.status == 'COMPLETED' %}bg-success{% else %}bg-warning text-dark{% endif %}" style="font-size: 0.6rem;">
+                            <span class="badge {% if f.status == 'COMPLETED' %}bg-success{% elif f.status == 'REJECTED' %}bg-dark{% else %}bg-primary{% endif %}" style="font-size: 0.6rem;">
                                 {{ f.get_status_display }}
                             </span>
                         </div>
                         {% empty %}
-                        <p class="text-muted text-center small mt-3">No hay registros.</p>
-                        {% endfor %}
-                    </div>
-
-                    <!-- ASIGNADOS -->
-                    <div class="tab-pane fade {% if modo == 'asignados' %}show active{% endif %}" id="panel-asignados" role="tabpanel">
-                        {% for f in flujos_asignados %}
-                        <div class="workflow-item {% if execution_sel and execution_sel.id == f.id %}workflow-active{% endif %}"
-                             onclick="location.href='{% url 'workflows_ejecucion_detalle' f.id %}?modo=asignados&estado={{ estado_filtro }}'">
-                            <div>
-                                <span class="d-block small fw-bold">{{ f.workflow_template.name }}</span>
-                                <span class="text-muted" style="font-size: 0.75rem;">Paso: {{ f.current_stage_execution.name|default:"Finalizado" }}</span>
-                            </div>
-                            <span class="badge bg-danger" style="font-size: 0.6rem;">Acción</span>
+                        <div class="text-center py-4">
+                            <i class="bi bi-folder2-open text-muted fs-3"></i>
+                            <p class="text-muted small mt-2">No hay registros en esta sección.</p>
                         </div>
-                        {% empty %}
-                        <p class="text-muted text-center small mt-3">Sin tareas pendientes.</p>
                         {% endfor %}
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
         <!-- CONTENIDO PRINCIPAL Y FORMULARIO -->
-        <div class="col-md-9">
+        <div class="col-lg-8">
             {% if execution_sel %}
             <div class="row g-4">
                 <!-- FORMULARIO Y DATOS DE LA ETAPA -->
@@ -188,20 +226,68 @@
                     <div class="panel-lateral">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="fw-bold mb-0" style="color: var(--iica-azul);">
-                                <i class="bi bi-file-earmark-text-fill me-2"></i> Formulario Institucional
+                                <i class="bi bi-file-earmark-text-fill me-2"></i> Trámite #{{ execution_sel.id }}
+                                {% if execution_sel.workflow_template.description %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2 rounded-circle py-0 px-2" data-bs-toggle="modal" data-bs-target="#modalTemplateDesc" title="Ver descripción general del flujo">
+                                    <i class="bi bi-question-lg"></i>
+                                </button>
+                                {% endif %}
                             </h5>
-                            <span class="badge bg-secondary">Estado: {{ execution_sel.get_status_display }}</span>
+                            <span class="badge bg-secondary-2">Estado: {{ execution_sel.get_status_display }}</span>
                         </div>
+
+                        
+                        <!-- DESCRIPCIÓN E INSTRUCCIONES DE LA ETAPA ACTUAL -->
+                        {% if execution_sel.current_stage_execution %}
+                            {% if puede_ver_actual %}
+                            <div class="card bg-light border-0 mb-3 p-3 shadow-sm border-start border-4 border-primary">
+                                <h6 class="fw-bold text-primary mb-1">
+                                    <i class="bi bi-info-circle-fill me-1"></i> Etapa Actual: {{ execution_sel.current_stage_execution.name }}
+                                </h6>
+                                <p class="small text-dark mb-0" style="white-space: pre-line;">
+                                    {{ execution_sel.current_stage_execution.instructions|default:"Sin instrucciones específicas para esta etapa." }}
+                                </p>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning py-3 mb-3">
+                                <h6 class="fw-bold"><i class="bi bi-shield-lock-fill me-1"></i> Trámite en curso</h6>
+                                <p class="small mb-0">Este trámite se encuentra en una etapa asignada a otro usuario. No tienes permisos para visualizar los formularios activos de esta fase.</p>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+
+                        <!-- SECCIÓN: INSUMOS Y GUÍAS DE APOYO DE LA ETAPA ACTUAL -->
+                        {% if stage_resources %}
+                        <div class="alert alert-info py-2 px-3 mb-3 border-0 shadow-sm" style="background-color: #e8f4f8;">
+                            <div class="d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#collapseInsumosEtapa" role="button" aria-expanded="false" style="cursor: pointer;">
+                                <span class="fw-bold small text-primary mb-0">
+                                    <i class="bi bi-folder2-open me-1"></i> Documentos de referencia para esta etapa ({{ stage_resources.count }})
+                                </span>
+                                <i class="bi bi-chevron-down small"></i>
+                            </div>
+                            <div class="collapse mt-2" id="collapseInsumosEtapa">
+                                <ul class="list-unstyled mb-0 small">
+                                    {% for res in stage_resources %}
+                                    <li class="mb-1">
+                                        <a href="{{ res.file.url }}" target="_blank" class="text-decoration-none fw-bold text-dark">
+                                            <i class="bi bi-file-earmark-arrow-down text-primary me-1"></i> {{ res.title }}
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <!-- SECCIÓN DE DESCARGA DE DOCUMENTOS FINALES -->
                         {% if execution_sel.status == 'COMPLETED' %}
-                            <div class="alert alert-success mt-3">
-                                <h6>Documentos Finales Generados:</h6>
-                                <ul class="mb-0">
+                            <div class="alert alert-success mt-3 shadow-sm">
+                                <h6 class="fw-bold"><i class="bi bi-file-earmark-check me-1"></i> Documentos Finales Generados:</h6>
+                                <ul class="mb-0 small">
                                     {% for gen_doc in execution_sel.generated_documents.all %}
                                         <li>
                                             <a href="{% url 'descargar_documento_generado' gen_doc.id %}" class="fw-bold text-decoration-none">
-                                                📥 Descargar {{ gen_doc.name }} ({{ gen_doc.file_path|basename }})
+                                                Descargar {{ gen_doc.name }} ({{ gen_doc.file_path|basename }})
                                             </a>
                                         </li>
                                     {% empty %}
@@ -216,28 +302,36 @@
                             
                             {% if form_fields or doc_mappings %}
                                 <div class="p-3 bg-light rounded border mb-3">
-                                    <h6 class="fw-bold text-secondary mb-3">Campos y Documentos del Trámite</h6>
+                                    <h6 class="fw-bold text-secondary mb-3">
+                                        {% if execution_sel.status == 'COMPLETED' or execution_sel.status == 'REJECTED' %}
+                                        Valores Registrados en el Trámite (Histórico)
+                                        {% else %}
+                                        Campos y Documentos del Trámite
+                                        {% endif %}
+                                    </h6>
                                     
                                     <!-- Campos Manuales -->
                                     {% for field in form_fields %}
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold">
-                                            {{ field.label }} {% if field.is_required %}<span class="text-danger">*</span>{% endif %}
+                                            {{ field.label }} {% if field.is_required and execution_sel.status == 'IN_PROGRESS' %}<span class="text-danger">*</span>{% endif %}
                                         </label>
                                         {% with val=form_values_map|get_item:field.id %}
                                         {% if field.field_type == 'FILE' %}
                                             {% if val.file_value %}
                                                 <div class="mb-1">
-                                                    <a href="{{ val.file_value.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                                    <a href="{{ val.file_value.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                                         <i class="bi bi-download"></i> Descargar archivo actual
                                                     </a>
                                                 </div>
                                             {% endif %}
+                                            {% if execution_sel.status == 'IN_PROGRESS' %}
                                             <input type="file" name="field_{{ field.id }}" class="form-control form-control-sm" {% if not es_asignado_actual %}disabled{% endif %}>
+                                            {% endif %}
                                         {% elif field.field_type == 'TEXTAREA' %}
-                                            <textarea name="field_{{ field.id }}" class="form-control form-control-sm" rows="2" {% if not es_asignado_actual %}disabled{% endif %}>{{ val.text_value|default:'' }}</textarea>
+                                            <textarea name="field_{{ field.id }}" class="form-control form-control-sm" rows="2" {% if execution_sel.status != 'IN_PROGRESS' or not es_asignado_actual %}disabled{% endif %}>{{ val.text_value|default:'' }}</textarea>
                                         {% else %}
-                                            <input type="{{ field.field_type|lower }}" name="field_{{ field.id }}" class="form-control form-control-sm" value="{{ val.text_value|default:'' }}" {% if not es_asignado_actual %}disabled{% endif %}>
+                                            <input type="{{ field.field_type|lower }}" name="field_{{ field.id }}" class="form-control form-control-sm" value="{{ val.text_value|default:'' }}" {% if execution_sel.status != 'IN_PROGRESS' or not es_asignado_actual %}disabled{% endif %}>
                                         {% endif %}
                                         {% endwith %}
                                     </div>
@@ -246,7 +340,7 @@
                                     <!-- Mapeos de Etiquetas de Documentos -->
                                     {% for mapping in doc_mappings %}
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">{{ mapping.label }}</label>
+                                            <label class="form-label small fw-bold">{{ mapping.label }}</label>
                                             
                                             {% with val=form_values_map|get_item:mapping.id %}
                                                 {% if mapping.field_type == 'FILE' %}
@@ -257,11 +351,13 @@
                                                             </a>
                                                         </div>
                                                     {% endif %}
+                                                    {% if execution_sel.status == 'IN_PROGRESS' %}
                                                     <input type="file" name="mapping_{{ mapping.id }}" class="form-control form-control-sm" {% if not es_asignado_actual %}disabled{% endif %}>
+                                                    {% endif %}
                                                 {% elif mapping.field_type == 'TEXTAREA' %}
-                                                    <textarea name="mapping_{{ mapping.id }}" class="form-control form-control-sm" rows="2" {% if not es_asignado_actual %}disabled{% endif %}>{{ val.text_value|default:'' }}</textarea>
+                                                    <textarea name="mapping_{{ mapping.id }}" class="form-control form-control-sm" rows="2" {% if execution_sel.status != 'IN_PROGRESS' or not es_asignado_actual %}disabled{% endif %}>{{ val.text_value|default:'' }}</textarea>
                                                 {% else %}
-                                                    <input type="{{ mapping.field_type|lower }}" name="mapping_{{ mapping.id }}" class="form-control form-control-sm" value="{{ val.text_value|default:'' }}" {% if not es_asignado_actual %}disabled{% endif %}>
+                                                    <input type="{{ mapping.field_type|lower }}" name="mapping_{{ mapping.id }}" class="form-control form-control-sm" value="{{ val.text_value|default:'' }}" {% if execution_sel.status != 'IN_PROGRESS' or not es_asignado_actual %}disabled{% endif %}>
                                                 {% endif %}
                                             {% endwith %}
                                         </div>
@@ -277,7 +373,7 @@
                                     <textarea name="comments" class="form-control form-control-sm" rows="2" placeholder="Observaciones..."></textarea>
                                 </div>
                                 <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-success btn-sm fw-bold flex-grow-1">Guardar y Avanzar Etapa</button>
+                                    <button type="submit" class="btn btn-success btn-sm fw-bold flex-grow-1 shadow-sm">Guardar y Avanzar Etapa</button>
                                 </div>
                             {% endif %}
                         </form>
@@ -302,44 +398,184 @@
                     </div>
                 </div>
 
-                <!-- LÍNEA DE TIEMPO AUDITABLE CON FECHA Y HORA -->
+                <!-- HISTORIAL, RESPUESTAS ANTERIORES Y AISLAMIENTO -->
                 <div class="col-lg-5">
                     <div class="panel-lateral">
-                        <h5 class="fw-bold mb-3" style="color: var(--iica-azul);">
-                            <i class="bi bi-clock-history me-2"></i> Línea de Tiempo
-                        </h5>
-                        <ul class="timeline">
-                            {% for etapa in etapas_historial %}
-                            <li class="timeline-item {% if etapa.status == 'COMPLETED' %}completed{% elif etapa.status == 'PENDING' %}current{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0" style="color: var(--iica-azul);">
+                                <i class="bi bi-clock-history me-2"></i> Historial y Respuestas
+                            </h5>
+                        </div>
+                    
+                        <!-- LÍNEA DE TIEMPO / HISTORIAL DE ETAPAS -->
+                        <h6 class="text-secondary fw-bold small text-uppercase mb-2">Línea de Tiempo</h6>
+                        <ul class="timeline mb-4">
+                            {% for etapa in etapas_historial_completo %}
+                            <li class="timeline-item {% if etapa.status == 'COMPLETED' %}completed{% elif etapa.status == 'PENDING' and execution_sel.current_stage_execution.id == etapa.id %}current{% endif %}">
                                 <span class="d-block fw-bold small text-dark">{{ etapa.name }}</span>
                                 <span class="text-muted" style="font-size: 0.7rem;">Estado: {{ etapa.get_status_display }}</span>
-                                {% if etapa.started_at %}
-                                    <span class="d-block text-secondary" style="font-size: 0.7rem;">Iniciado: {{ etapa.started_at|date:"d/m/Y H:i" }}</span>
-                                {% endif %}
-                                {% if etapa.completed_at %}
-                                    <span class="d-block text-secondary" style="font-size: 0.7rem;">Completado: {{ etapa.completed_at|date:"d/m/Y H:i" }}</span>
-                                {% endif %}
-                                {% if etapa.completed_by %}
-                                    <span class="d-block text-secondary" style="font-size: 0.7rem;">Por: {{ etapa.completed_by.get_full_name|default:etapa.completed_by.username }}</span>
-                                {% endif %}
-                                {% if etapa.comments %}
-                                    <p class="small bg-light p-2 rounded mt-1 mb-0" style="font-size: 0.75rem;">{{ etapa.comments }}</p>
+                                
+                                <!-- Ocultar detalles sensibles si la etapa actual no está permitida -->
+                                {% if etapa.id == execution_sel.current_stage_execution.id and not puede_ver_actual %}
+                                    <span class="d-block text-warning fw-bold" style="font-size: 0.7rem;">(Etapa en curso - Asignada a otro usuario)</span>
+                                {% else %}
+                                    <span class="d-block text-primary fw-bold" style="font-size: 0.7rem;">
+                                        Asignado(s): 
+                                        {% for usr in etapa.assigned_users.all %}
+                                            {{ usr.get_full_name|default:usr.username }}{% if not forloop.last %}, {% endif %}
+                                        {% empty %}
+                                            Sin asignar
+                                        {% endfor %}
+                                    </span>
+
+                                    {% if etapa.started_at %}
+                                        <span class="d-block text-secondary" style="font-size: 0.7rem;">Iniciado: {{ etapa.started_at|date:"d/m/Y H:i" }}</span>
+                                    {% endif %}
+                                    {% if etapa.completed_at %}
+                                        <span class="d-block text-secondary" style="font-size: 0.7rem;">Completado: {{ etapa.completed_at|date:"d/m/Y H:i" }}</span>
+                                    {% endif %}
+                                    {% if etapa.comments %}
+                                        <p class="small bg-light p-2 rounded mt-1 mb-0" style="font-size: 0.75rem;">{{ etapa.comments }}</p>
+                                    {% endif %}
                                 {% endif %}
                             </li>
                             {% endfor %}
                         </ul>
+                    
+                        <hr>
+                    
+                        <!-- RESPUESTAS Y DOCUMENTOS AGRUPADOS POR ETAPA -->
+                        <h6 class="text-secondary fw-bold small text-uppercase mb-2">Historial de Respuestas por Etapa</h6>
+                        {% if ocultar_historial_respuestas %}
+                            <div class="alert alert-warning py-2 px-3 small">
+                                <i class="bi bi-shield-lock-fill me-1"></i> Este trámite se encuentra en una etapa protegida. No tienes permisos para visualizar el historial de respuestas anteriores.
+                            </div>
+                        {% else %}
+                            {% if etapas_historial_completo %}
+                                <div class="accordion accordion-flush" id="accordionEtapasHistorial">
+                                    {% for etapa_hist in etapas_historial_completo %}
+                                    {% if execution_sel.status != 'IN_PROGRESS' or etapa_hist.status == 'COMPLETED' or es_iniciador or request.user.is_staff or etapa_hist.id == execution_sel.current_stage_execution.id and puede_ver_actual %}
+                                    <div class="accordion-item bg-light border rounded mb-2">
+                                            <h2 class="accordion-header" id="headingStage{{ etapa_hist.id }}">
+                                                <button class="accordion-button collapsed py-2 px-3 small fw-bold bg-transparent text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStage{{ etapa_hist.id }}">
+                                                    <i class="bi bi-folder-check me-2 text-primary"></i> {{ etapa_hist.name }}
+                                                </button>
+                                            </h2>
+                                            <div id="collapseStage{{ etapa_hist.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionEtapasHistorial">
+                                                <div class="accordion-body small py-2 px-3 bg-white">
+                                                    
+                                                    <!-- Botón discreto para ver instrucciones y material de apoyo -->
+                                                    <div class="mb-2 text-end">
+                                                        <button type="button" class="btn btn-outline-secondary btn-xs py-0 px-2" style="font-size: 0.7rem;" data-bs-toggle="modal" data-bs-target="#modalInfoEtapa{{ etapa_hist.id }}">
+                                                            <i class="bi bi-info-circle"></i> Ver instrucciones y recursos
+                                                        </button>
+                                                    </div>
+                    
+                                                    <hr class="my-1">
+                                                    <p class="fw-bold text-muted mb-1" style="font-size: 0.7rem; text-transform: uppercase;">Preguntas y Respuestas:</p>
+                                                    
+                                                    <!-- Recorrer las respuestas asociadas a esta etapa específica -->
+                                                    {% for resp in historial_respuestas %}
+                                                        {% if resp.filled_in_stage.id == etapa_hist.id %}
+                                                            <div class="mb-2 p-2 bg-light rounded border-start border-3 border-primary">
+                                                                <span class="fw-bold text-dark d-block" style="font-size: 0.75rem;">
+                                                                    <i class="bi bi-question-circle text-primary me-1"></i> 
+                                                                    {% if resp.form_field and resp.form_field.label %}
+                                                                        {{ resp.form_field.label }}
+                                                                    {% elif resp.document_field_mapping and resp.document_field_mapping.label %}
+                                                                        {{ resp.document_field_mapping.label }}
+                                                                    {% else %}
+                                                                        Campo sin etiqueta
+                                                                    {% endif %}
+                                                                </span>
+                                                                {% if resp.file_value %}
+                                                                    <a href="{{ resp.file_value.url }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 mt-1" style="font-size: 0.7rem;">
+                                                                        <i class="bi bi-download"></i> Descargar archivo adjunto
+                                                                    </a>
+                                                                {% else %}
+                                                                    <span class="text-secondary d-block mt-1" style="font-size: 0.75rem;">
+                                                                        {{ resp.text_value|default:"Sin respuesta registrada." }}
+                                                                    </span>
+                                                                {% endif %}
+                                                            </div>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                    
+                                        <!-- MODAL DISCRETO PARA INSTRUCCIONES Y RECURSOS DE CADA ETAPA -->
+                                        <div class="modal fade" id="modalInfoEtapa{{ etapa_hist.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-light py-2">
+                                                        <h6 class="modal-title fw-bold text-primary">Detalles de: {{ etapa_hist.name }}</h6>
+                                                        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body small">
+                                                        <p class="fw-bold mb-1">Instrucciones:</p>
+                                                        <p class="text-muted bg-light p-2 rounded" style="white-space: pre-line;">{{ etapa_hist.instructions|default:"Sin instrucciones específicas." }}</p>
+                                                        
+                                                        {% if etapa_hist.stage_template and etapa_hist.stage_template.resources.exists %}
+                                                            <p class="fw-bold mb-1 mt-3">Material de Apoyo / Insumos:</p>
+                                                            <ul class="list-unstyled">
+                                                                {% for res in etapa_hist.stage_template.resources.all %}
+                                                                <li>
+                                                                    <a href="{{ res.file.url }}" target="_blank" class="text-decoration-none">
+                                                                        <i class="bi bi-file-earmark-arrow-down text-primary"></i> {{ res.title }}
+                                                                    </a>
+                                                                </li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted small">No hay etapas registradas en el historial.</p>
+                            {% endif %}
+                        {% endif %}
                     </div>
                 </div>
             </div>
             {% else %}
             <div class="panel-lateral text-center py-5">
-                <h5 class="text-muted">Seleccione un trámite de la bandeja izquierda para ver su detalle.</h5>
+                <i class="bi bi-arrow-left-circle fs-1 text-muted"></i>
+                <h5 class="text-muted mt-3">Seleccione un trámite de la bandeja izquierda para ver su detalle.</h5>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 
+<!-- MODAL DESCRIPCIÓN DE PLANTILLA DURANTE EJECUCIÓN -->
+{% if execution_sel and execution_sel.workflow_template.description %}
+<div class="modal fade" id="modalTemplateDesc" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-light py-2">
+                <h6 class="modal-title fw-bold text-primary">
+                    <i class="bi bi-info-circle me-1"></i> Plantilla: {{ execution_sel.workflow_template.name }}
+                </h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body small">
+                <p class="fw-bold mb-1">Descripción del Proceso:</p>
+                <p class="text-muted bg-light p-3 rounded mb-0" style="white-space: pre-line;">{{ execution_sel.workflow_template.description }}</p>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- MODAL CREAR PLANTILLA -->
 <div class="modal fade" id="modalNuevaPlantilla" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -365,8 +601,8 @@
 
                     <hr>
 
-                    <!-- ETAPAS Y ACTORES -->
-                    <h5 class="fw-bold text-primary">1. Definición de Etapas y Actores</h5>
+                    <!-- ETAPAS, ACTORES E INSUMOS -->
+                    <h5 class="fw-bold text-primary">1. Definición de Etapas, Actores e Insumos</h5>
                     <div id="contenedor-etapas">
                         <div class="card p-3 mb-3 bg-light stage-card" data-stage-id="1">
                             <div class="row g-2">
@@ -385,6 +621,8 @@
                                     </select>
                                     <div class="form-text">Mantén presionado Ctrl/Cmd para seleccionar varios.</div>
                                 </div>
+
+                                <!-- OPCIONES AVANZADAS DE ETAPA -->
                                 <div class="col-12 mt-2">
                                     <div class="form-check">
                                         <input class="form-check-input stage-dynamic-checkbox" type="checkbox" name="stage_dynamic_1" id="dynamic_1" onchange="toggleParticipantesDinamicos(this, 1)">
@@ -392,11 +630,40 @@
                                             Participante Dinámico / Indefinido (Se seleccionará al iniciar el trámite)
                                         </label>
                                     </div>
+                                    <div class="form-check mt-1">
+                                        <input class="form-check-input" type="checkbox" name="stage_isolate_1" id="isolate_1">
+                                        <label class="form-check-label small fw-bold text-dark" for="isolate_1">
+                                            🔒 Aislar esta etapa (Ocultar historial previo / respuestas anteriores de forma discreta)
+                                        </label>
+                                    </div>
                                 </div>
+
                                 <div class="col-12 mt-2">
                                     <label class="form-label small">Instrucciones para esta etapa</label>
                                     <textarea name="stage_instructions[]" class="form-control form-control-sm" rows="1">Complete los datos iniciales.</textarea>
                                 </div>
+
+                                <!-- INSUMOS Y GUÍAS DE APOYO (OPCIONAL) -->
+                                <div class="col-12 mt-3">
+                                    <div class="p-2 bg-white border rounded">
+                                        <label class="form-label small fw-bold text-secondary mb-1">Insumos y Guías de Apoyo (Opcional)</label>
+                                        <div class="insumos-stage-container">
+                                            <div class="row g-2 mb-2 align-items-center insumo-row">
+                                                <div class="col-md-5">
+                                                    <input type="text" name="stage_resource_title_1[]" class="form-control form-control-sm" placeholder="Título (ej: Guía PDF)">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <input type="file" name="stage_resource_file_1[]" class="form-control form-control-sm">
+                                                </div>
+                                                <div class="col-md-1 text-end">
+                                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.insumo-row').remove()">×</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-xs" style="font-size: 0.75rem;" onclick="agregarInsumoEtapa(this, 1)">+ Añadir insumo</button>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -404,7 +671,7 @@
 
                     <hr>
 
-                    <!-- DOCUMENTOS WORD (SIN ETAPA GLOBAL) -->
+                    <!-- DOCUMENTOS WORD -->
                     <h5 class="fw-bold text-primary">2. Documentos Word (.docx) y sus Etiquetas</h5>
                     <p class="text-muted small">Sube los documentos. Sus etiquetas <code>{{etiqueta}}</code> generarán preguntas automáticas que podrás asignar a la etapa de tu preferencia.</p>
 
@@ -450,7 +717,7 @@
                             </thead>
                             <tbody id="contenedor-campos">
                                 <tr>
-                                    <td><input type="text" name="field_label[]" class="form-control form-control-sm" placeholder="Ej: Observación interna" required></td>
+                                    <td><input type="text" name="field_label[]" class="form-control form-control-sm" placeholder="Ej: Observación interna"></td>
                                     <td>
                                         <select name="field_type[]" class="form-select form-select-sm">
                                             <option value="TEXT">Texto Corto</option>
@@ -461,7 +728,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <select name="field_stage_index[]" class="form-select form-select-sm etapa-ref-select" required>
+                                        <select name="field_stage_index[]" class="form-select form-select-sm etapa-ref-select">
                                             <option value="1">Etapa 1: Solicitud Inicial</option>
                                         </select>
                                     </td>
@@ -503,7 +770,9 @@
                         <select name="workflow_template_id" id="select-template-flujo" class="form-select" required onchange="cargarDetallePlantillaInicio(this.value)">
                             <option value="" selected disabled>-- Elija una plantilla --</option>
                             {% for t in available_templates %}
-                                <option value="{{ t.id }}" data-stages='[
+                                <option value="{{ t.id }}" 
+                                    data-description="{{ t.description|escapejs }}"
+                                    data-stages='[
                                     {% for s in t.stages.all %}
                                         {"id": {{ s.id }}, "name": "{{ s.name|escapejs }}", "order": {{ s.order }}, "is_dynamic": {% if s.is_dynamic_assignee %}true{% else %}false{% endif %}}{% if not forloop.last %},{% endif %}
                                     {% endfor %}
@@ -512,6 +781,8 @@
                         </select>
                     </div>
 
+                    <!-- Contenedor donde aparecerá la descripción al elegir la plantilla -->
+                    <div id="contenedor-descripcion-plantilla" class="mb-3"></div>
                     <div id="contenedor-participantes-dinamicos" class="mt-3"></div>
                 </div>
                 <div class="modal-footer">
@@ -522,48 +793,124 @@
     </div>
 </div>
 
-<script>
+{% if execution_sel and execution_sel.status == 'IN_PROGRESS' %}
+<div id="poll-stage-tracker" 
+     data-stage-id="{{ execution_sel.current_stage_execution.id|default:'' }}" 
+     data-status="{{ execution_sel.status }}" 
+     style="display:none;"></div>
 
+<script>
+    const initialStageId = "{{ execution_sel.current_stage_execution.id|default:'' }}";
+    const initialStatus = "{{ execution_sel.status }}";
+
+    setInterval(() => {
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const remoteTracker = doc.querySelector('#poll-stage-tracker');
+                
+                if (remoteTracker) {
+                    const remoteStageId = remoteTracker.getAttribute('data-stage-id');
+                    const remoteStatus = remoteTracker.getAttribute('data-status');
+                    
+                    if (remoteStageId !== initialStageId || remoteStatus !== initialStatus) {
+                        window.location.reload();
+                    }
+                }
+            })
+            .catch(err => console.error("Error en sondeo de actualización:", err));
+    }, 12000);
+</script>
+{% endif %}
+
+<script>
     let totalEtapas = 1;
     
     function agregarEtapa() {
-    totalEtapas++;
-    const container = document.getElementById('contenedor-etapas');
-    const primerSelect = document.querySelector('.stage-users-select');
-    const selectUsuariosHTML = primerSelect ? primerSelect.innerHTML : '';
+        totalEtapas++;
+        const container = document.getElementById('contenedor-etapas');
+        const primerSelect = document.querySelector('.stage-users-select');
+        const selectUsuariosHTML = primerSelect ? primerSelect.innerHTML : '';
 
-    const div = document.createElement('div');
-    div.className = 'card p-3 mb-3 bg-light stage-card';
-    div.dataset.stageId = totalEtapas;
-    div.innerHTML = `
-        <div class="row g-2">
-            <div class="col-md-6">
-                <label class="form-label small fw-bold">Nombre de la Etapa ${totalEtapas}</label>
-                <input type="text" name="stage_name[]" class="form-control form-control-sm stage-name-input" required placeholder="Ej: Revisión Técnica" oninput="actualizarSelectsEtapas()">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label small fw-bold">Actores / Usuarios Asignados</label>
-                <select name="stage_users_${totalEtapas}[]" id="stage_users_${totalEtapas}" class="form-select form-select-sm stage-users-select" multiple required>
-                    ${selectUsuariosHTML}
-                </select>
-            </div>
-            <div class="col-12 mt-2">
-                <div class="form-check">
-                    <input class="form-check-input stage-dynamic-checkbox" type="checkbox" name="stage_dynamic_${totalEtapas}" id="dynamic_${totalEtapas}" onchange="toggleParticipantesDinamicos(this, ${totalEtapas})">
-                    <label class="form-check-label small fw-bold text-danger" for="dynamic_${totalEtapas}">
-                        Participante Dinámico / Indefinido (Se seleccionará al iniciar el trámite)
-                    </label>
+        const div = document.createElement('div');
+        div.className = 'card p-3 mb-3 bg-light stage-card';
+        div.dataset.stageId = totalEtapas;
+        div.innerHTML = `
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Nombre de la Etapa ${totalEtapas}</label>
+                    <input type="text" name="stage_name[]" class="form-control form-control-sm stage-name-input" required placeholder="Ej: Revisión Técnica" oninput="actualizarSelectsEtapas()">
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Actores / Usuarios Asignados</label>
+                    <select name="stage_users_${totalEtapas}[]" id="stage_users_${totalEtapas}" class="form-select form-select-sm stage-users-select" multiple required>
+                        ${selectUsuariosHTML}
+                    </select>
+                </div>
+                <div class="col-12 mt-2">
+                    <div class="form-check">
+                        <input class="form-check-input stage-dynamic-checkbox" type="checkbox" name="stage_dynamic_${totalEtapas}" id="dynamic_${totalEtapas}" onchange="toggleParticipantesDinamicos(this, ${totalEtapas})">
+                        <label class="form-check-label small fw-bold text-danger" for="dynamic_${totalEtapas}">
+                            Participante Dinámico / Indefinido (Se seleccionará al iniciar el trámite)
+                        </label>
+                    </div>
+                    <div class="form-check mt-1">
+                        <input class="form-check-input" type="checkbox" name="stage_isolate_${totalEtapas}" id="isolate_${totalEtapas}">
+                        <label class="form-check-label small fw-bold text-dark" for="isolate_${totalEtapas}">
+                            🔒 Aislar esta etapa (Ocultar historial previo / respuestas anteriores de forma discreta)
+                        </label>
+                    </div>
+                </div>
+                <div class="col-12 mt-2">
+                    <label class="form-label small">Instrucciones</label>
+                    <textarea name="stage_instructions[]" class="form-control form-control-sm" rows="1"></textarea>
+                </div>
+
+                <div class="col-12 mt-3">
+                    <div class="p-2 bg-white border rounded">
+                        <label class="form-label small fw-bold text-secondary mb-1">Insumos y Guías de Apoyo (Opcional)</label>
+                        <div class="insumos-stage-container">
+                            <div class="row g-2 mb-2 align-items-center insumo-row">
+                                <div class="col-md-5">
+                                    <input type="text" name="stage_resource_title_${totalEtapas}[]" class="form-control form-control-sm" placeholder="Título (ej: Guía PDF)">
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="file" name="stage_resource_file_${totalEtapas}[]" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-1 text-end">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.insumo-row').remove()">×</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-xs" style="font-size: 0.75rem;" onclick="agregarInsumoEtapa(this, ${totalEtapas})">+ Añadir insumo</button>
+                    </div>
+                </div>
+
             </div>
-            <div class="col-12 mt-2">
-                <label class="form-label small">Instrucciones</label>
-                <textarea name="stage_instructions[]" class="form-control form-control-sm" rows="1"></textarea>
+        `;
+        container.appendChild(div);
+        actualizarSelectsEtapas();
+    }
+
+    function agregarInsumoEtapa(button, stageNum) {
+        const container = button.closest('.col-12').querySelector('.insumos-stage-container');
+        const row = document.createElement('div');
+        row.className = 'row g-2 mb-2 align-items-center insumo-row';
+        row.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" name="stage_resource_title_${stageNum}[]" class="form-control form-control-sm" placeholder="Título (ej: Guía PDF)">
             </div>
-        </div>
-    `;
-    container.appendChild(div);
-    actualizarSelectsEtapas();
-}
+            <div class="col-md-6">
+                <input type="file" name="stage_resource_file_${stageNum}[]" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-1 text-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.insumo-row').remove()">×</button>
+            </div>
+        `;
+        container.appendChild(row);
+    }
     
     function agregarDocumento() {
         const container = document.getElementById('documentos-container');
@@ -653,10 +1000,25 @@
     function cargarDetallePlantillaInicio(templateId) {
         const select = document.getElementById('select-template-flujo');
         const selectedOption = select.options[select.selectedIndex];
-        const container = document.getElementById('contenedor-participantes-dinamicos');
-        container.innerHTML = '';
-    
-        if (!selectedOption || !selectedOption.dataset.stages) return;
+        const containerDesc = document.getElementById('contenedor-descripcion-plantilla');
+        const containerDinamicos = document.getElementById('contenedor-participantes-dinamicos');
+        
+        containerDesc.innerHTML = '';
+        containerDinamicos.innerHTML = '';
+
+        if (!selectedOption) return;
+
+        const description = selectedOption.dataset.description;
+        if (description && description.trim() !== "") {
+            containerDesc.innerHTML = `
+                <div class="alert alert-light border small mb-2 shadow-sm">
+                    <span class="fw-bold text-primary"><i class="bi bi-info-circle me-1"></i> Descripción del proceso:</span>
+                    <p class="mb-0 text-muted mt-1" style="white-space: pre-line;">${description}</p>
+                </div>
+            `;
+        }
+
+        if (!selectedOption.dataset.stages) return;
     
         try {
             const stages = JSON.parse(selectedOption.dataset.stages);
@@ -679,26 +1041,24 @@
                     `;
                 });
                 html += '</div>';
-                container.innerHTML = html;
+                containerDinamicos.innerHTML = html;
             }
         } catch (e) {
             console.error("Error al parsear etapas dinámicas:", e);
         }
     }
+    
     function toggleParticipantesDinamicos(checkbox, stageId) {
         const card = checkbox.closest('.stage-card');
         const selectUsuarios = card.querySelector('.stage-users-select');
 
         if (checkbox.checked) {
-            // Si es dinámico, quitamos el required, limpiamos la selección y deshabilitamos el select
             selectUsuarios.removeAttribute('required');
             selectUsuarios.value = '';
-            // Si usas selects múltiples, deseleccionamos todas las opciones:
             Array.from(selectUsuarios.options).forEach(opt => opt.selected = false);
             selectUsuarios.disabled = true;
             selectUsuarios.classList.add('bg-white', 'text-muted');
         } else {
-            // Si no es dinámico, volvemos a exigir usuarios fijos
             selectUsuarios.setAttribute('required', 'required');
             selectUsuarios.disabled = false;
             selectUsuarios.classList.remove('bg-white', 'text-muted');
@@ -761,5 +1121,6 @@
             container.innerHTML = '<p class="text-danger small mb-0">Error al procesar el archivo.</p>';
         });
     }
-    </script>
+</script>
+
 {% endblock %}

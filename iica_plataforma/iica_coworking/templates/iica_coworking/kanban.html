@@ -2,181 +2,141 @@
 {% load static %}
 
 {% block content %}
-<!-- <script src="{% static 'js/sortable.min.js' %}"></script> -->
 <style>
-    .quick-console{
+    /* =========================================
+       CONSOLA FLOTANTE INFERIOR (ADAPTATIVA)
+       ========================================= */
+    .quick-console {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
-
-        height:140px;
-
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-
-        background: rgba(255,255,255,0.92);
-        backdrop-filter: blur(8px);
-
-        border-top:1px solid #ddd;
-
-        padding:10px 20px;
-
-        z-index:9999;
-    }
-
-    /* columnas */
-
-    .qc-left{
-        width:25%;
-    }
-
-    /* .qc-center{
-        width:50%;
-        text-align:center;
-    } */
-
-    .qc-right{
-        width:25%;
-        /* text-align:right; */
-    }
-
-    /* input crear tarea */
-
-    #quickTaskInput{
-        width:100%;
-        padding:8px;
-        border-radius:6px;
-        border:1px solid #ccc;
-    }
-
-    /* feed */
-
-    .qc-center{
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        gap:10px;
-    }
-
-    .feed-btn{
-        border:none;
-        background:#f1f3f5;
-        border-radius:6px;
-        width:32px;
-        height:32px;
-        cursor:pointer;
-        font-size:14px;
-    }
-
-    .feed-btn:hover{
-        background:#e2e6ea;
-    }
-
-    #taskFeed{
-        width:260px;
-        height:60px;
-
-        display:flex;
-        align-items:center;
-        justify-content:center;
-
-        background:white;
-        border-radius:8px;
-
-        padding:8px 12px;
-
-        box-shadow:0 2px 6px rgba(0,0,0,.08);
-    }
-
-    .feed-task{
-        text-align:center;
-        line-height:1.2;
-    }
-
-    .feed-meta{
-        font-size:12px;
-        color:#777;
-    }
-
-    .task-card{
-        padding:6px;
-        font-size:14px;
-    }
-
-    /* ===== SIDEBAR ===== */
-    .sidebar {
-        background: white;
-        border-radius: 14px;
-        padding: 20px;
-        box-shadow: 0 4px 14px rgba(0,0,0,.12);
-    }
-    
-    .tabla-scroll {
-        max-height: calc(65vh - 0px);
-        overflow-y: auto;
-    }
-    
-    .sidebar h3 {
-        color: var(--iica-azul);
-        font-weight: 800;
-        margin-bottom: 15px;
-        text-align: center;
-    }
-    
-    /* ===== ITEMS ===== */
-    .proyecto-item {
+        min-height: 110px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 12px;
-        border-radius: 10px;
-        margin-bottom: 6px;
-        cursor: pointer;
-        transition: background .15s ease;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid #ddd;
+        padding: 10px 15px;
+        z-index: 1040;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+        gap: 10px;
     }
-    
-    .proyecto-item:hover {
-        background: rgba(79,163,209,.10);
+
+    .qc-left { width: 35%; }
+    .qc-center {
+        width: 30%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-left: 1px solid #eee;
+        border-right: 1px solid #eee;
+        padding: 0 10px;
+        gap: 2px;
     }
-    
-    .proyecto-active {
-        background: var(--iica-azul);
+
+    /* =========================
+    TABS
+    ========================= */
+    .nav-pills .nav-link{
+        font-weight:600;
+        color:var(--iica-azul);
+    }
+
+    .nav-pills .nav-link.active{
+        background:var(--iica-azul);
+    }
+
+    /* ESTILO TIKTOK FEED MEJORADO */
+    .tiktok-feed-container {
+        position: relative;
+        width: 100%;
+        height: 75px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+        border-radius: 8px;
         color: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255,255,255,0.1);
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    
-    .proyecto-nombre {
+
+    .tiktok-feed-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,95,156,0.3);
+        border-color: var(--iica-azul);
+    }
+
+    .tiktok-card {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tiktok-card.active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .tiktok-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.65rem;
         font-weight: 600;
-        font-size: .95rem;
+        text-transform: uppercase;
+        color: var(--iica-amarillo, #fceb07);
     }
-    
-    /* ===== INDICADOR GENERAL ===== */
-    .estado-general {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        flex-shrink: 0;
+
+    .tiktok-body {
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        color: #ffffff;
     }
-    
-    /* Escala */
-    .estado-0 { background: var(--iica-verde); }
-    .estado-1 { background: var(--iica-verde-lima); }
-    .estado-2 { background: var(--iica-amarillo); }
-    .estado-3 { background: var(--iica-naranja); }
-    .estado-4 { background: var(--iica-rojo); }
-    
-    /* ===== TABS ===== */
-    .nav-pills .nav-link {
-        font-weight: 600;
-        color: var(--iica-azul);
+
+    .tiktok-footer {
+        font-size: 0.65rem;
+        color: var(--iica-verde-lima);
+        display: flex;
+        justify-content: space-between;
     }
-    
-    .nav-pills .nav-link.active {
-        background: var(--iica-azul);
+
+    .tiktok-controls {
+        display: flex;
+        gap: 6px;
     }
-    
-    
+
+    /* FLECHAS CON BUEN CONTRASTE */
+    .tiktok-btn {
+        background: #374151;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #ffffff;
+        font-size: 0.7rem;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 2px 8px;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+    .tiktok-btn:hover { background: var(--iica-azul); color: white; }
+
+    .qc-right { width: 32%; display: flex; flex-direction: column; gap: 4px; }
+
     :root {
         --iica-azul: #00589C;
         --iica-verde: #00a380;
@@ -187,206 +147,65 @@
         --gris-fondo: #F4F4F4;
         --gris-borde: #DDDDDD;
     }
-    
-    /* ===== CONTENEDOR GENERAL ===== */
+
     .main-container {
-        min-height: calc(100vh - 100px);
+        min-height: calc(100vh - 80px);
         background: var(--gris-fondo);
-        padding: 40px;
+        padding: 30px;
         border-radius: 16px;
         box-shadow: 0 8px 25px rgba(0,0,0,.15);
-    }
-    
-    /* ===== SIDEBAR ===== */
-    /* .sidebar {
-        background: white;
-        border-radius: 14px;
-        padding: 20px;
-        box-shadow: 0 4px 14px rgba(0,0,0,.12);
-    }
-    
-    .sidebar h3 {
-        color: var(--iica-azul);
-        font-weight: 800;
-        margin-bottom: 18px;
-        text-align: center;
-    } */
-    /* Header fijo */
-    .proyectos-table thead th {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-    }
-    
-    .proyecto-item {
-        padding: 12px 14px;
-        border-radius: 10px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all .2s ease;
-    }
-    
-    .semana-actual {
-        color: #ff8800;
-        font-weight: 700;
-        text-shadow: 0 0 0.5px currentColor;
-    }
-    
-    
-    .proyecto-item:hover {
-        background: rgba(79,163,209,.12);
-    }
-    
-    .proyecto-active {
-        background: var(--iica-azul);
-        color: white;
-    }
-    
-    /* ===== TITULO ===== */
-    .titulo-proyecto {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: var(--iica-azul);
-        margin-bottom: 25px;
-    }
-    
-    /* ===== TABLA ===== */
-    .tabla-indicadores {
-        width: 100%;
-        background: white;
-        border-radius: 14px;
-        border-collapse: collapse;
-        overflow: hidden;
-        box-shadow: 0 4px 14px rgba(0,0,0,.12);
-    }
-    
-    .tabla-indicadores thead {
-        background: var(--iica-azul);
-        color: white;
-    }
-    
-    .tabla-indicadores th,
-    .tabla-indicadores td {
-        padding: 10px;
-        text-align: center;
-        border-bottom: 1px solid var(--gris-borde);
-    }
-    
-    .tabla-indicadores th:first-child,
-    .tabla-indicadores td:first-child {
-        text-align: left;
-        padding-left: 16px;
-    }
-    
-    /* ===== FILAS ===== */
-    .fila-indicador {
-        cursor: pointer;
-        transition: background .15s ease;
-    }
-    
-    .fila-indicador:hover {
-        background: rgba(79,163,209,.08);
-    }
-    
-    /* ===== CELDAS DE ESTADO ===== */
-    .celda {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        margin: auto;
-        /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.596); */
-        box-shadow: 0 0px 4px rgba(0, 0, 0, 0.596);
-    
-        box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.74);
-    }
-    
-    .celda.actual {
-        width: 30px;
-        height: 30px;    
-        border-radius: 50%;
-        box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.74);
-    }
-    
-    .celda.futuro {
-        opacity: .75;
-        width: 15px;
-        height: 15px;
-        box-shadow: 0 0px 3px rgba(0, 0, 0, 0.596);
-    }
-    
-    /* Escala de colores */
-    .estado-0 { background: var(--iica-verde); }
-    .estado-1 { background: var(--iica-verde-lima); }
-    .estado-2 { background: var(--iica-amarillo); }
-    .estado-3 { background: var(--iica-naranja); }
-    .estado-4 { background: var(--iica-rojo); }
-    
-    /* ===== PANEL LATERAL ===== */
-    .panel-lateral {
-        background: white;
-        border-radius: 14px;
-        padding: 20px;
-        min-height: 300px;
-        box-shadow: 0 4px 14px rgba(0,0,0,.12);
-    }
-    
-    /* ===== BOTONES ===== */
-    
-    
-    .btn-container {
-        margin-top: 35px;
-        display: flex;
-        justify-content: center;
-        gap: 25px;
+        margin-bottom: 130px;
     }
 
-    .tarea-card{
+    .kanban-col { min-height: 400px; }
+
+    .tarea {
+        cursor: grab;
+        border-radius: 10px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .tarea:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .tarea-card {
         position: relative;
-        padding-left: 12px;
+        padding-left: 14px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    .tarea-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 6px;
+        bottom: 6px;
+        width: 4px;
+        border-radius: 3px;
+        background: var(--tag-color, #999);
     }
 
-    .tarea-card::before{
-        content:"";
-        position:absolute;
-        left:0;
-        top:6px;
-        bottom:6px;
-        width:4px;
-        border-radius:3px;
-        background:var(--tag-color, #999);
+    @media (max-width: 768px) {
+        .quick-console {
+            flex-direction: column;
+            height: auto;
+            padding: 8px;
+            gap: 6px;
+        }
+        .qc-left, .qc-center, .qc-right { width: 100%; border: none; padding: 0; }
+        .tiktok-feed-container { height: 60px; }
+        .main-container { margin-bottom: 240px; padding: 15px; }
     }
-    
-    .btn-iica {
-        padding: 14px 26px;
-        border-radius: 10px;
-        font-size: 1.15rem;
-        font-weight: bold;
-        color: white;
-        border: none;
-        background: var(--iica-azul);
-    }
-    
-    .btn-crear {
-        background: var(--iica-verde);
-    }
-    </style>
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-
-<style>
-.kanban-col{
-    min-height:400px;
-}
-.tarea{
-    cursor:grab;
-}
-</style>
 
 <div class="franja_baja4"></div>
 
 <div class="main-container">
 
+<!-- TABS -->
 <ul class="nav nav-pills mb-4">
     <li class="nav-item">
         <a class="nav-link active" href="{% url 'okr_kanban' %}">
@@ -408,287 +227,558 @@
 </ul>
 
 <div class="row">
-
-<!-- PENDIENTES -->
-<div class="col-md-3">
-
-<h5>Pendientes</h5>
-
-<div class="kanban-col" id="pendiente">
-
-{% for t in tareas_pendientes %}
-
-<div class="card mb-2 tarea" data-id="{{ t.id }}">
-
-
-
-<div class="card-body tarea-card"
-     data-iniciativa="{{ t.iniciativa.id }}">
-
-    <strong>{{ t.titulo }}</strong>
-
-    <div class="small text-muted">
-        {{ t.iniciativa.nombre }}
-    </div>
-
-</div>
-
-
-
-</div>
-
-{% endfor %}
-
-</div>
-</div>
-
-
-<!-- EJECUCION -->
-
-<div class="col-md-3">
-
-<h5>En ejecución</h5>
-
-<div class="kanban-col" id="ejecucion">
-
-{% for t in tareas_ejecucion %}
-
-<div class="card mb-2 tarea" data-id="{{ t.id }}">
-
-
-
-<div class="card-body tarea-card"
-     data-iniciativa="{{ t.iniciativa.id }}">
-
-    <strong>{{ t.titulo }}</strong>
-
-    <div class="small text-muted">
-        {{ t.iniciativa.nombre }}
-    </div>
-
-</div>
-
-
-
-</div>
-
-{% endfor %}
-
-</div>
-</div>
-
-
-<!-- ESPERA -->
-
-<div class="col-md-3">
-
-<h5>En espera</h5>
-
-<div class="kanban-col" id="espera">
-
-{% for t in tareas_espera %}
-
-<div class="card mb-2 tarea" data-id="{{ t.id }}">
-
-
-<div class="card-body tarea-card"
-     data-iniciativa="{{ t.iniciativa.id }}">
-
-    <strong>{{ t.titulo }}</strong>
-
-    <div class="small text-muted">
-        {{ t.iniciativa.nombre }}
-    </div>
-
-</div>
-
-
-
-</div>
-
-{% endfor %}
-
-</div>
-</div>
-
-
-<!-- TERMINADAS -->
-
-<div class="col-md-3">
-
-<h5>Terminadas</h5>
-
-<div class="kanban-col" id="terminada">
-
-{% for t in tareas_terminadas %}
-
-<div class="card mb-2 tarea" data-id="{{ t.id }}">
-
-
-
-<div class="card-body tarea-card"
-     data-iniciativa="{{ t.iniciativa.id }}">
-
-    <strong>{{ t.titulo }}</strong>
-
-    <div class="small text-muted">
-        {{ t.iniciativa.nombre }}
-    </div>
-
-</div>
-
-
-
-</div>
-
-{% endfor %}
-
-</div>
-</div>
-
-</div>
-</div>
-<div class="quick-console">
-
-    <!-- Crear tarea -->
-    <div class="qc-left">
-
-        <form method="post" action="{% url 'tarea_kanban_crear' %}">
-        {% csrf_token %}
-
-        <div class="row g-2">
-
-            <div class="col-12 col-md-4">
-                <input type="text"
-                       name="titulo"
-                       class="form-control"
-                       placeholder="Título tarea"
-                       required>
+    <!-- PENDIENTES -->
+    <div class="col-md-3">
+        <h5 class="fw-bold text-secondary">Pendientes</h5>
+        <div class="kanban-col" id="pendiente">
+            {% for t in tareas_pendientes %}
+            <div class="card mb-2 tarea shadow-sm" data-id="{{ t.id }}" data-proyecto="{{ t.proyecto.id|default:'' }}" onclick="abrirModalDetalle({{ t.id }})">
+                <div class="card-body tarea-card" data-iniciativa="{{ t.iniciativa.id|default:'' }}">
+                    <strong>{{ t.titulo }}</strong>
+                    <div class="small text-muted mt-1">
+                        {{ t.iniciativa.nombre|default:"Sin iniciativa" }}
+                    </div>
+                </div>
             </div>
+            {% endfor %}
+        </div>
+    </div>
 
-            <div class="col-6 col-md-3">
-                <select name="iniciativa"
-                        class="form-select"
-                        required>
+    <!-- EJECUCION -->
+    <div class="col-md-3">
+        <h5 class="fw-bold text-primary">En ejecución</h5>
+        <div class="kanban-col" id="ejecucion">
+            {% for t in tareas_ejecucion %}
+            <div class="card mb-2 tarea shadow-sm" data-id="{{ t.id }}" data-proyecto="{{ t.proyecto.id|default:'' }}" onclick="abrirModalDetalle({{ t.id }})">
+                <div class="card-body tarea-card" data-iniciativa="{{ t.iniciativa.id|default:'' }}">
+                    <strong>{{ t.titulo }}</strong>
+                    <div class="small text-muted mt-1">
+                        {{ t.iniciativa.nombre|default:"Sin iniciativa" }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 
+    <!-- ESPERA -->
+    <div class="col-md-3">
+        <h5 class="fw-bold text-warning">En espera</h5>
+        <div class="kanban-col" id="espera">
+            {% for t in tareas_espera %}
+            <div class="card mb-2 tarea shadow-sm" data-id="{{ t.id }}" data-proyecto="{{ t.proyecto.id|default:'' }}" onclick="abrirModalDetalle({{ t.id }})">
+                <div class="card-body tarea-card" data-iniciativa="{{ t.iniciativa.id|default:'' }}">
+                    <strong>{{ t.titulo }}</strong>
+                    <div class="small text-muted mt-1">
+                        {{ t.iniciativa.nombre|default:"Sin iniciativa" }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- TERMINADAS -->
+    <div class="col-md-3">
+        <h5 class="fw-bold text-success">Terminadas</h5>
+        <div class="kanban-col" id="terminada">
+            {% for t in tareas_terminadas %}
+            <div class="card mb-2 tarea shadow-sm" data-id="{{ t.id }}" data-proyecto="{{ t.proyecto.id|default:'' }}" onclick="abrirModalDetalle({{ t.id }})">
+                <div class="card-body tarea-card" data-iniciativa="{{ t.iniciativa.id|default:'' }}">
+                    <strong>{{ t.titulo }}</strong>
+                    <div class="small text-muted mt-1">
+                        {{ t.iniciativa.nombre|default:"Sin iniciativa" }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- CONSOLA FLOTANTE INFERIOR -->
+<div class="quick-console">
+    <!-- 1. SECCIÓN IZQUIERDA: CREAR TAREAS -->
+    <div class="qc-left">
+        <form method="post" action="{% url 'tarea_kanban_crear' %}">
+            {% csrf_token %}
+            <div class="row g-1">
+                <div class="col-12 col-md-5">
+                    <input type="text" name="titulo" class="form-control form-control-sm" placeholder="Título tarea" required>
+                </div>
+                <div class="col-6 col-md-4">
+                    <select name="iniciativa" class="form-select form-select-sm" required>
+                        {% for i in iniciativas %}
+                            <option value="{{ i.id }}">{{ i.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <input type="date" name="fecha_limite" class="form-control form-control-sm">
+                </div>
+            </div>
+            <div class="row g-1 mt-1">
+                <div class="col-10">
+                    <input type="text" name="descripcion" class="form-control form-control-sm" placeholder="Descripción breve...">
+                </div>
+                <div class="col-2 d-grid">
+                    <button class="btn btn-success btn-sm">+</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 2. SECCIÓN CENTRO: NOTIFICACIONES TIKTOK FEED LLAMATIVO -->
+    <div class="qc-center">
+        <div class="d-flex justify-content-between w-100 align-items-center">
+            <span class="small fw-bold text-secondary" style="font-size: 0.7rem;" id="pendingCounter">🔥 Alta Prioridad (0)</span>
+            <div class="tiktok-controls">
+                <button class="tiktok-btn" onclick="event.stopPropagation(); prevTikTokCard();">▲</button>
+                <button class="tiktok-btn" onclick="event.stopPropagation(); nextTikTokCard();">▼</button>
+            </div>
+        </div>
+        <div class="tiktok-feed-container" id="tiktokFeed" onclick="abrirTarjetaActualTikTok()">
+            <div class="tiktok-card active">
+                <div class="tiktok-header">
+                    <span>⚡ Alerta Urgente</span>
+                    <span>Cargando...</span>
+                </div>
+                <div class="tiktok-body">Cargando tareas prioritarias...</div>
+                <div class="tiktok-footer"><span>Haz clic para ver tarjeta</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. SECCIÓN DERECHA: FILTROS VERSÁTILES -->
+    <div class="qc-right">
+        <div class="row g-1">
+            <div class="col-7">
+                <input type="text" id="filtroTexto" class="form-control form-control-sm" placeholder="🔍 Buscar tarjeta...">
+            </div>
+            <div class="col-5">
+                <select id="filtroIniciativa" class="form-select form-select-sm">
+                    <option value="">Iniciativa...</option>
                     {% for i in iniciativas %}
-                        <option value="{{ i.id }}">
-                            {{ i.nombre }}
-                        </option>
+                        <option value="{{ i.id }}">{{ i.nombre }}</option>
                     {% endfor %}
-
                 </select>
             </div>
-
-            <div class="col-6 col-md-3">
-                <input type="date"
-                       name="fecha_limite"
-                       class="form-control">
-            </div>
-
-            <div class="col-12 col-md-2 d-grid">
-                <button class="btn btn-success">
-                    Añadir
-                </button>
-            </div>
-
         </div>
-
-        <textarea name="descripcion"
-                  class="form-control form-control-sm mt-2"
-                  rows="2"
-                  placeholder="Descripción (opcional)"></textarea>
-
-        </form>
-
+        <div class="row g-1">
+            <div class="col-6">
+                <select id="filtroProyecto" class="form-select form-select-sm">
+                    <option value="">Proyecto SECAP...</option>
+                    {% for p in proyectos %}
+                        <option value="{{ p.id }}">{{ p.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 d-flex gap-1">
+                <button class="btn btn-outline-secondary btn-sm w-100" onclick="limpiarFiltros()" style="font-size:0.75rem;">Limpiar</button>
+            </div>
+        </div>
     </div>
-
 </div>
+
+<!-- MODAL DE DETALLE DE TAREA / BITÁCORA -->
+<div class="modal fade" id="modalDetalleTarea" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0" id="modalDetalleContenido">
+            <div class="modal-body p-4 text-center">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Cargando detalles de la tarjeta...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-
-/* =========================
-WEBSOCKET
-========================= */
-
-const socket = new WebSocket(
-    (window.location.protocol === "https:" ? "wss://" : "ws://") +
-    window.location.host +
-    "/ws/kanban/"
-);
-
-
-/* =========================
-RECIBIR CAMBIOS
-========================= */
-
-socket.onmessage = function(e){
-
-    const data = JSON.parse(e.data);
-
-    const tarea = document.querySelector(
-        `[data-id='${data.tarea_id}']`
+    /* =========================================
+       LÓGICA DEL FEED TIKTOK (INTERVALO LENTO)
+       ========================================= */
+    let tiktokIndex = 0;
+    let tiktokItems = [];
+    let tiktokInterval = null;
+    let isHovered = false;
+    
+    async function cargarNotificacionesTikTok() {
+        try {
+            let response = await fetch("{% url 'tareas_prioridad' %}");
+            let data = await response.json();
+            tiktokItems = data;
+            
+            document.getElementById("pendingCounter").innerText = `🔥 Alta Prioridad (${data.length})`;
+            
+            if(data.length > 0) {
+                renderTikTokFeed();
+            }
+        } catch (e) {
+            console.error("Error cargando feed:", e);
+        }
+    }
+    
+    function renderTikTokFeed() {
+        const container = document.getElementById("tiktokFeed");
+        if(!tiktokItems.length) {
+            container.innerHTML = `
+                <div class="tiktok-card active">
+                    <div class="tiktok-header">
+                        <span>✨ Todo al día</span>
+                        <span>IICA Coworking</span>
+                    </div>
+                    <div class="tiktok-body">No hay tareas pendientes en este momento.</div>
+                    <div class="tiktok-footer"><span>¡Buen trabajo!</span></div>
+                </div>
+            `;
+            return;
+        }
+    
+        let html = "";
+        tiktokItems.forEach((item, index) => {
+            let activeClass = index === tiktokIndex ? "active" : "";
+            html += `
+                <div class="tiktok-card ${activeClass}" data-id="${item.id}">
+                    <div class="tiktok-header">
+                        <span>⚡ ${item.iniciativa || 'Sin iniciativa'}</span>
+                        <span>📅 ${item.fecha_limite || 'Sin fecha'}</span>
+                    </div>
+                    <div class="tiktok-body" title="${item.titulo}">${item.titulo}</div>
+                    <div class="tiktok-footer">
+                        <span>📁 Proy: ${item.proyecto || 'General'}</span>
+                        <span style="text-decoration: underline; font-weight: bold;">Ver detalle &rarr;</span>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+    
+    function nextTikTokCard() {
+        if(!tiktokItems.length || isHovered) return;
+        tiktokIndex = (tiktokIndex + 1) % tiktokItems.length;
+        renderTikTokFeed();
+    }
+    
+    function prevTikTokCard() {
+        if(!tiktokItems.length) return;
+        tiktokIndex = (tiktokIndex - 1 + tiktokItems.length) % tiktokItems.length;
+        renderTikTokFeed();
+    }
+    
+    function abrirTarjetaActualTikTok() {
+        if(!tiktokItems.length) return;
+        let tarjetaActual = tiktokItems[tiktokIndex];
+        if(tarjetaActual && tarjetaActual.id) {
+            abrirModalDetalle(tarjetaActual.id);
+        }
+    }
+    
+    const feedContainer = document.getElementById("tiktokFeed");
+    if (feedContainer) {
+        feedContainer.addEventListener("mouseenter", () => { isHovered = true; });
+        feedContainer.addEventListener("mouseleave", () => { isHovered = false; });
+    }
+    
+    // Aumentado a 10 segundos (10000 ms) para dar tiempo a leer con calma
+    if (!tiktokInterval) {
+        tiktokInterval = setInterval(() => {
+            if(tiktokItems.length > 1) {
+                nextTikTokCard();
+            }
+        }, 10000);
+    }
+    
+    cargarNotificacionesTikTok();
+    
+    /* =========================================
+       FILTROS Y KANBAN
+       ========================================= */
+    const filtroTexto = document.getElementById("filtroTexto");
+    const filtroIniciativa = document.getElementById("filtroIniciativa");
+    const filtroProyecto = document.getElementById("filtroProyecto");
+    
+    function aplicarFiltrosKanban() {
+        const textoVal = filtroTexto.value.toLowerCase();
+        const iniciativaVal = filtroIniciativa.value;
+        const proyectoVal = filtroProyecto.value;
+    
+        document.querySelectorAll(".card.tarea").forEach(card => {
+            const titulo = card.querySelector("strong").innerText.toLowerCase();
+            const iniciativaId = card.querySelector(".card-body").dataset.iniciativa;
+            const proyectoId = card.dataset.proyecto || "";
+    
+            let coincideTexto = titulo.includes(textoVal);
+            let coincideIniciativa = !iniciativaVal || iniciativaId === iniciativaVal;
+            let coincideProyecto = !proyectoVal || proyectoId === proyectoVal;
+    
+            card.style.display = (coincideTexto && coincideIniciativa && coincideProyecto) ? "" : "none";
+        });
+    }
+    
+    filtroTexto.addEventListener("input", aplicarFiltrosKanban);
+    filtroIniciativa.addEventListener("change", aplicarFiltrosKanban);
+    filtroProyecto.addEventListener("change", aplicarFiltrosKanban);
+    
+    function limpiarFiltros() {
+        filtroTexto.value = "";
+        filtroIniciativa.value = "";
+        filtroProyecto.value = "";
+        aplicarFiltrosKanban();
+    }
+    
+    const socket = new WebSocket(
+        (window.location.protocol === "https:" ? "wss://" : "ws://") +
+        window.location.host +
+        "/ws/kanban/"
     );
-
-    const columna = document.getElementById(data.estado);
-
-    if(tarea && columna){
-
-        columna.appendChild(tarea);
-
+    
+    socket.onmessage = function(e){
+        const data = JSON.parse(e.data);
+        const tarea = document.querySelector(`[data-id='${data.tarea_id}']`);
+        const columna = document.getElementById(data.estado);
+        if(tarea && columna){ columna.appendChild(tarea); }
+    };
+    
+    document.querySelectorAll(".kanban-col").forEach(col => {
+        new Sortable(col, {
+            group: "kanban",
+            animation: 150,
+            onEnd: function(evt){
+                socket.send(JSON.stringify({
+                    tarea_id: evt.item.dataset.id,
+                    estado: evt.to.id
+                }));
+            }
+        });
+    });
+    
+    document.querySelectorAll(".tarea-card").forEach(card => {
+        let id = parseInt(card.dataset.iniciativa);
+        if(id) { card.style.setProperty("--tag-color", `hsl(${(id * 137.508) % 360}, 55%, 45%)`); }
+    });
+    
+    /* =========================================
+       APERTURA DE MODAL DETALLE (DISEÑO REEQUILIBRADO)
+       ========================================= */
+    async function abrirModalDetalle(tareaId) {
+        const modalElement = document.getElementById('modalDetalleTarea');
+        let modalEl = bootstrap.Modal.getInstance(modalElement);
+        if (!modalEl) { modalEl = new bootstrap.Modal(modalElement); }
+        modalEl.show();
+        
+        const contenedor = document.getElementById('modalDetalleContenido');
+        contenedor.innerHTML = `
+            <div class="modal-body p-4 text-center">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Cargando detalles de la tarjeta...</p>
+            </div>
+        `;
+    
+        try {
+            let response = await fetch(`/tarea/${tareaId}/detalle/`);
+            let data = await response.json();
+            
+            let checklistHtml = data.checklist.map(item => `
+                <div class="form-check d-flex justify-content-between align-items-center mb-1">
+                    <div>
+                        <input class="form-check-input" type="checkbox" ${item.completado ? 'checked' : ''} onclick="toggleChecklist(${item.id})">
+                        <label class="form-check-label ${item.completado ? 'text-decoration-line-through text-muted' : ''}">${item.texto}</label>
+                    </div>
+                </div>
+            `).join('');
+    
+            let archivosHtml = data.archivos.map(arch => `
+                <li class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">
+                    <a href="${arch.url}" target="_blank" class="text-decoration-none small text-truncate" style="max-width: 280px;">📎 ${arch.nombre}</a>
+                </li>
+            `).join('');
+    
+            let krOptionsHtml = `<option value="">-- Seleccionar KR --</option>`;
+            let krDataMap = {};
+            if (data.krs && Array.isArray(data.krs)) {
+                data.krs.forEach(kr => {
+                    krOptionsHtml += `<option value="${kr.id}">${kr.descripcion} (Actual: ${kr.valor_actual})</option>`;
+                    krDataMap[kr.id] = kr.valor_actual;
+                });
+            }
+    
+            let bitacorasHtml = "";
+            if (data.bitacoras && data.bitacoras.length > 0) {
+                data.bitacoras.forEach(b => {
+                    let impactoInfo = b.kr_nombre ? `<div class="small text-success mt-1">🎯 <strong>KR:</strong> ${b.kr_nombre} &rarr; <strong>${b.valor_nuevo}</strong></div>` : "";
+                    let archivoAdjuntoInfo = b.archivo_url ? `<div class="mt-1"><a href="${b.archivo_url}" target="_blank" class="small text-decoration-none">📎 Ver adjunto</a></div>` : "";
+                    
+                    bitacorasHtml += `
+                        <div class="card mb-2 shadow-sm border-0 bg-white">
+                            <div class="card-body p-2" style="font-size: 0.85rem;">
+                                <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                                    <span>👤 <strong>${b.autor || 'Usuario'}</strong></span>
+                                    <span>📅 ${b.fecha}</span>
+                                </div>
+                                <p class="mb-1 mt-1 text-dark">${b.texto}</p>
+                                ${impactoInfo}
+                                ${archivoAdjuntoInfo}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                bitacorasHtml = `<p class="small text-muted">No hay entradas registradas en la bitácora todavía.</p>`;
+            }
+    
+            // Distribución equilibrada 6/6 columnas (Equilibra los documentos a la derecha y la bitácora a la izquierda)
+            contenedor.innerHTML = `
+                <div class="modal-header bg-light py-2">
+                    <h5 class="modal-title text-primary fw-bold">${data.titulo}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="max-height: 72vh; overflow-y: auto;">
+                    <div class="row">
+                        <!-- COLUMNA IZQUIERDA: Descripción, Checklists y Bitácora -->
+                        <div class="col-md-6 pe-md-3">
+                            <h6 class="fw-bold text-dark">Descripción</h6>
+                            <p class="text-muted small">${data.descripcion || 'Sin descripción detallada.'}</p>
+                            
+                            <hr>
+                            <h6 class="fw-bold text-dark">Detalles de la Tarjeta</h6>
+                            <ul class="list-unstyled small text-muted mb-3">
+                                <li><strong>Estado:</strong> <span class="badge bg-secondary">${data.estado || 'General'}</span></li>
+                                <li><strong>Fecha Límite:</strong> ${data.fecha_limite || 'Sin definir'}</li>
+                                <li><strong>Iniciativa:</strong> <span class="text-dark fw-bold">${data.iniciativa || 'Sin iniciativa'}</span></li>
+                                <li><strong>Proyecto SECAP:</strong> <span class="text-dark">${data.proyecto || 'Sin proyecto'}</span></li>
+                            </ul>
+    
+                            <hr>
+                            <h6 class="fw-bold text-dark">Subtareas / Checklists</h6>
+                            <div class="mb-3">${checklistHtml || '<p class="small text-muted">No hay elementos en el checklist.</p>'}</div>
+                            <form onsubmit="agregarChecklist(event, ${data.id})" class="input-group input-group-sm mb-3">
+                                {% csrf_token %}
+                                <input type="text" id="nuevoChecklistTexto" class="form-control" placeholder="Nuevo elemento..." required>
+                                <button class="btn btn-outline-primary" type="submit">Añadir</button>
+                            </form>
+    
+                            <hr>
+                            
+                          <h6 class="fw-bold text-dark mb-2">Archivos y Documentos</h6>
+                        <div class="border rounded p-2 bg-white mb-3">
+                            <div style="max-height: 180px; overflow-y: auto;" class="mb-2">
+                                <ul class="list-group list-group-flush">
+                                    ${archivosHtml || '<li class="list-group-item text-muted small text-center py-2 border-0">No hay archivos adjuntos</li>'}
+                                </ul>
+                            </div>
+                            
+                            <form onsubmit="subirArchivo(event, ${data.id})" enctype="multipart/form-data" class="input-group input-group-sm pt-2 border-top">
+                                {% csrf_token %}
+                                <input type="file" name="archivo" class="form-control form-control-sm" required>
+                                <button class="btn btn-outline-secondary" type="submit">Subir</button>
+                            </form>
+                        </div>
+    
+                            
+                        </div>
+    
+                        <!-- COLUMNA DERECHA: Detalles, Archivos y Documentos Ampliados -->
+                        <div class="col-md-6 border-start ps-md-3">
+                            <h6 class="fw-bold text-dark">Bitácora de Campo</h6>
+                           <div class="mb-3" id="contenedorBitacora" style="max-height: 400px; overflow-y: auto; background: #f8f9fa; padding: 8px; border-radius: 8px;">
+                                ${bitacorasHtml}
+                            </div>
+                            <h6 class="fw-bold text-dark mt-2">Nueva Entrada en Bitácora</h6>
+                            <form onsubmit="crearBitacora(event, ${data.id})" enctype="multipart/form-data" class="p-2 bg-light rounded border">
+                                {% csrf_token %}
+                                <div class="mb-2">
+                                    <textarea name="texto" class="form-control form-control-sm" rows="2" placeholder="Escribe tu entrada..." required></textarea>
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <select name="actualizar_kr" id="selectActualizarKr" class="form-select form-select-sm" onchange="autocompletarValorKr(${escapeHtml(JSON.stringify(krDataMap))})">
+                                            ${krOptionsHtml}
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" step="any" name="nuevo_valor_kr" id="inputNuevoValorKr" class="form-control form-control-sm" placeholder="Nuevo valor KR">
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <input type="file" name="archivo_adjunto" class="form-control form-control-sm">
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm w-100">Guardar Bitácora</button>
+                            </form>
+                            
+                            
+                            
+                            
+                        </div>
+                    </div>
+                </div>
+            `;
+            // Forzar scroll al final (estilo WhatsApp) para ver la bitácora más reciente
+            setTimeout(() => {
+                const bitacoraContainer = document.getElementById("contenedorBitacora");
+                if (bitacoraContainer) {
+                    bitacoraContainer.scrollTop = bitacoraContainer.scrollHeight;
+                }
+            }, 50);
+        } catch (err) {
+            console.error(err);
+            contenedor.innerHTML = `<div class="modal-body text-center text-danger p-4">Error al cargar la información de la tarjeta.</div>`;
+        }
     }
 
-};
 
-
-/* =========================
-SORTABLE
-========================= */
-
-const columnas = document.querySelectorAll(".kanban-col");
-
-columnas.forEach(col => {
-
-    new Sortable(col, {
-
-        group:"kanban",
-
-        animation:150,
-
-        onEnd:function(evt){
-
-            const tarea = evt.item.dataset.id;
-
-            const nuevoEstado = evt.to.id;
-
-            socket.send(JSON.stringify({
-
-                tarea_id:tarea,
-                estado:nuevoEstado
-
-            }));
-
-        }
-
-    });
-
-});
-
-function colorFromId(id){
-
-let hue = (id * 137.508) % 360; 
-return `hsl(${hue}, 55%, 45%)`;
-}
-
-document.querySelectorAll(".tarea-card").forEach(card => {
-
-let id = parseInt(card.dataset.iniciativa);
-
-let color = colorFromId(id);
-
-card.style.setProperty("--tag-color", color);
-
-});
-
-</script>
-
+    
+    function escapeHtml(str) {
+        return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    
+    function autocompletarValorKr(mapaKrs) {
+        let select = document.getElementById("selectActualizarKr");
+        let inputValor = document.getElementById("inputNuevoValorKr");
+        let krId = select.value;
+        inputValor.value = (krId && mapaKrs[krId] !== undefined) ? mapaKrs[krId] : "";
+    }
+    
+    async function toggleChecklist(itemId) {
+        await fetch(`/checklist/${itemId}/toggle/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" }
+        });
+    }
+    
+    async function agregarChecklist(event, tareaId) {
+        event.preventDefault();
+        let formData = new FormData();
+        formData.append("texto", document.getElementById("nuevoChecklistTexto").value);
+        
+        await fetch(`/tarea/${tareaId}/checklist/agregar/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" },
+            body: formData
+        });
+        abrirModalDetalle(tareaId);
+    }
+    
+    async function subirArchivo(event, tareaId) {
+        event.preventDefault();
+        await fetch(`/tarea/${tareaId}/archivo/subir/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" },
+            body: new FormData(event.target)
+        });
+        abrirModalDetalle(tareaId);
+    }
+    
+    // Corrección definitiva del botón de la bitácora
+    async function crearBitacora(event, tareaId) {
+        event.preventDefault();
+        await fetch(`/tarea/${tareaId}/bitacora/crear/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" },
+            body: new FormData(event.target)
+        });
+        abrirModalDetalle(tareaId);
+    }
+    </script>
 {% endblock %}

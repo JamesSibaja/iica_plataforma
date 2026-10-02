@@ -39,9 +39,14 @@ class StageTemplate(models.Model):
     assigned_users = models.ManyToManyField(User, related_name="stage_templates", blank=True)
     is_dynamic_assignee = models.BooleanField(default=False, help_text="Participante indefinido; se especifica al iniciar el trámite.")
     
-
-    # Configuración de comportamiento
+    # Configuración de comportamiento y seguridad
     requires_signature = models.BooleanField(default=False, help_text="¿Requiere firma vía DocuSeal?")
+    
+    # NUEVO: Permite aislar la etapa ocultando el historial de datos previos si se requiere
+    isolate_previous_history = models.BooleanField(
+        default=False, 
+        help_text="Si se marca, los usuarios de esta etapa no verán las respuestas ni archivos de etapas anteriores."
+    )
 
     class Meta:
         ordering = ['order']
@@ -49,6 +54,17 @@ class StageTemplate(models.Model):
 
     def __str__(self):
         return f"{self.workflow.name} - Etapa {self.order}: {self.name}"
+
+
+class StageTemplateResource(models.Model):
+    """NUEVO: Insumos, guías o documentos de ejemplo asociados a una etapa específica."""
+    stage_template = models.ForeignKey(StageTemplate, on_delete=models.CASCADE, related_name="resources")
+    title = models.CharField(max_length=255, help_text="Título descriptivo del recurso (ej: Formato de ejemplo, Guía PDF)")
+    file = models.FileField(upload_to="templates/stage_resources/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Insumo: {self.title} (Etapa {self.stage_template.name})"
 
 
 class FormField(models.Model):

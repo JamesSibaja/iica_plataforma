@@ -22,12 +22,12 @@ ASGI_APPLICATION = 'iica_plataforma.asgi.application'
 
 USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH", "False").lower() == "true"
 
-CELERY_TIMEZONE = 'America/Costa_Rica'
+
 
 CELERY_BEAT_SCHEDULE = {
-    'actualizar-noticias-diarias-1:16pm': {
+    'actualizar-noticias-diarias-8am': {
         'task': 'website_management.tasks.actualizar_noticias',
-        'schedule': crontab(hour=13, minute=40),  
+        'schedule': crontab(hour=8, minute=0),  # Todos los días a las 08:00 AM
     },
 }
 
@@ -48,16 +48,14 @@ INSTALLED_APPS = [
     'secap',
     'website_management',
     'sig_management',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.microsoft',
 ]
 
 
-if USE_MICROSOFT_AUTH:
-    INSTALLED_APPS += [
-        'allauth',
-        'allauth.account',
-        'allauth.socialaccount',
-        'allauth.socialaccount.providers.microsoft',
-    ]
+
 
 SITE_ID = 1
 
@@ -67,6 +65,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -80,11 +79,7 @@ if USE_MICROSOFT_AUTH:
         'allauth.account.auth_backends.AuthenticationBackend'
     )
 
-if USE_MICROSOFT_AUTH:
-    MIDDLEWARE.insert(
-        MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1,
-        'allauth.account.middleware.AccountMiddleware'
-    )
+
 
 if USE_MICROSOFT_AUTH:
     SOCIALACCOUNT_ADAPTER = "website_management.adapters.MicrosoftSocialAdapter"
@@ -139,8 +134,8 @@ DATABASES = {
     }
 }
 
-LANGUAGE_CODE = 'es'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'es-CR'
+TIME_ZONE = 'America/Costa_Rica'
 USE_I18N = True
 USE_TZ = True
 
