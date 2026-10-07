@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Dependencias mínimas necesarias para Celery + Django
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    apt-utils \
     build-essential \
     libpq-dev \
     libssl-dev \

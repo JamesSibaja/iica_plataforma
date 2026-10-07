@@ -1,108 +1,253 @@
 #!/bin/bash
 
-set -e
+set -Eeuo pipefail
+
 
 # =========================================================
-# IICA Plataforma - Let's Encrypt / acme.sh
+# IICA Plataforma
+# Let's Encrypt / acme.sh
 # =========================================================
 
-domains=$1
-email=$2
 
-if [[ -z "$domains" || -z "$email" ]]; then
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+PROJECT_DIR="$SCRIPT_DIR"
+
+DOMAIN="${1:-}"
+EMAIL="${2:-}"
+
+
+if [[ -z "$DOMAIN" || -z "$EMAIL" ]]; then
+
+    echo ""
     echo "Uso:"
-    echo "sudo ./init-letsencrypt.sh dominio correo"
+    echo "  sudo ./init-letsencrypt.sh dominio correo"
+    echo ""
+
     exit 1
+
 fi
 
-PROJECT_DIR="/home/usuario/iica_plataforma"
-
-ACME_HOME="/root/.acme.sh"
-ACME_BIN="$ACME_HOME/acme.sh"
-
-data_path="$PROJECT_DIR/letsencrypt"
-data_path_conf="$PROJECT_DIR/letsencrypt/conf"
-
-# =========================================================
-# ROOT CHECK
-# =========================================================
 
 if [[ "$EUID" -ne 0 ]]; then
-    echo "Ejecuta con sudo"
+
+    echo "ERROR: este script debe ejecutarse con sudo."
+
     exit 1
+
 fi
+
+
+ACME_HOME="/root/.acme.sh"
+
+ACME_BIN="$ACME_HOME/acme.sh"
+
+DATA_PATH="$PROJECT_DIR/letsencrypt"
+
+WEBROOT="$DATA_PATH/www"
+
+CERT_DIR="$DATA_PATH/conf/live/$DOMAIN"
+
+
+echo ""
+echo "========================================="
+echo " Let's Encrypt"
+echo "========================================="
+echo "Dominio : $DOMAIN"
+echo "Proyecto: $PROJECT_DIR"
+echo ""
+
 
 # =========================================================
 # DEPENDENCIAS
 # =========================================================
 
+echo ">>> Instalando dependencias..."
+
 apt-get update -qq
 
 apt-get install -y curl cron
 
-systemctl enable cron || true
-systemctl start cron || true
+
+systemctl enable cron >/dev/null 2>&1 || true
+
+systemctl start cron >/dev/null 2>&1 || true
+
 
 # =========================================================
 # DIRECTORIOS
 # =========================================================
 
-mkdir -p "$data_path/www"
-mkdir -p "$data_path_conf/live/$domains"
+mkdir -p "$WEBROOT"
+
+mkdir -p "$CERT_DIR"
+
+
+chmod 755 "$DATA_PATH"
+
+chmod 755 "$WEBROOT"
+
+
+# =========================================================
+# VERIFICAR DNS
+# =========================================================
+
+echo ">>> Verificando DNS..."
+
+PUBLIC_IP="$(curl -4 -s https://ifconfig.me)"
+
+RESOLVED_IP=""
+
+if command -v getent >/dev/null 2>&1; then
+
+    RESOLVED_IP="$(getent ahostsv4 "$DOMAIN" | awk 'NR==1 {print $1}')"
+
+fi
+
+
+if [[ -z "$RESOLVED_IP" ]]; then
+
+    echo ""
+    echo "ERROR: $DOMAIN no resuelve desde la VM."
+    echo ""
+    echo "IP pública de la VM:"
+    echo "  $PUBLIC_IP"
+    echo ""
+    echo "Comprueba la delegación DNS antes de continuar."
+    echo ""
+
+    exit 1
+
+fi
+
+
+if [[ "$RESOLVED_IP" != "$PUBLIC_IP" ]]; then
+
+    echo ""
+    echo "ERROR: el dominio resuelve a una IP diferente."
+    echo ""
+    echo "Dominio : $RESOLVED_IP"
+    echo "VM      : $PUBLIC_IP"
+    echo ""
+
+    exit 1
+
+fi
+
+
+echo "DNS correcto:"
+echo "  $DOMAIN -> $PUBLIC_IP"
+
 
 # =========================================================
 # INSTALAR ACME.SH
 # =========================================================
 
-if [[ ! -f "$ACME_BIN" ]]; then
+if [[ ! -x "$ACME_BIN" ]]; then
 
-    echo ">>> Instalando acme.sh"
+    echo ""
+    echo ">>> Instalando acme.sh..."
 
-    curl https://get.acme.sh | sh
+    curl -fsSL https://get.acme.sh | sh -s email="$EMAIL"
 
 fi
 
-# Volver a comprobar que exista
-if [[ ! -f "$ACME_BIN" ]]; then
-    echo "ERROR: No se pudo instalar acme.sh"
+
+if [[ ! -x "$ACME_BIN" ]]; then
+
+    echo ""
+    echo "ERROR: no se pudo instalar acme.sh."
+
     exit 1
+
 fi
 
+
 # =========================================================
-# CONFIGURAR ACME.SH
+# CA
 # =========================================================
 
-"$ACME_BIN" --set-default-ca --server zerossl
+echo ">>> Configurando Let's Encrypt..."
+
+"$ACME_BIN" \
+    --set-default-ca \
+    --server letsencrypt
+
+
+# =========================================================
+# ACCOUNT
+# =========================================================
 
 "$ACME_BIN" \
     --register-account \
-    -m "$email" \
-    --server zerossl || true
+    -m "$EMAIL" \
+    --server letsencrypt \
+    || true
+
 
 # =========================================================
-# EMITIR CERTIFICADO
+# CERTIFICADO
 # =========================================================
 
-echo ">>> Solicitando certificado SSL para $domains..."
+echo ""
+echo ">>> Solicitando certificado..."
 
-"$ACME_BIN" --issue \
-    --webroot "$data_path/www" \
-    -d "$domains" \
-    --keylength ec-256 \
-    --force
+"$ACME_BIN" \
+    --issue \
+    --webroot "$WEBROOT" \
+    -d "$DOMAIN" \
+    -d "www.$DOMAIN" \
+    --keylength ec-256
+
 
 # =========================================================
 # INSTALAR CERTIFICADO
 # =========================================================
 
+echo ""
 echo ">>> Instalando certificado..."
 
-"$ACME_BIN" --install-cert \
-    -d "$domains" \
-    --key-file "$data_path_conf/live/$domains/privkey.pem" \
-    --fullchain-file "$data_path_conf/live/$domains/fullchain.pem" \
-    --reloadcmd "cd $PROJECT_DIR && docker compose exec -T nginx_vm nginx -s reload"
+"$ACME_BIN" \
+    --install-cert \
+    -d "$DOMAIN" \
+    --ecc \
+    --key-file "$CERT_DIR/privkey.pem" \
+    --fullchain-file "$CERT_DIR/fullchain.pem" \
+    --reloadcmd "$PROJECT_DIR/ssl-renew.sh"
 
+
+# =========================================================
+# VERIFICAR
+# =========================================================
+
+if [[ ! -f "$CERT_DIR/fullchain.pem" ]]; then
+
+    echo ""
+    echo "ERROR: no se creó fullchain.pem."
+
+    exit 1
+
+fi
+
+
+if [[ ! -f "$CERT_DIR/privkey.pem" ]]; then
+
+    echo ""
+    echo "ERROR: no se creó privkey.pem."
+
+    exit 1
+
+fi
+
+
+echo ""
 echo "========================================="
-echo " SSL CONFIGURADO CORRECTAMENTE"
+echo " SSL CONFIGURADO"
 echo "========================================="
+echo ""
+echo "Certificado:"
+echo "  $CERT_DIR/fullchain.pem"
+echo ""
+echo "Clave:"
+echo "  $CERT_DIR/privkey.pem"
+echo ""

@@ -6,6 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 # Dependencias del sistema (mínimas y necesarias)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    apt-utils \
     fonts-freefont-ttf \
     postgresql-client \
     python3-dev \

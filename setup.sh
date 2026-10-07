@@ -1,334 +1,382 @@
 #!/bin/bash
-set -e
 
+set -Eeuo pipefail
+
+
+# =========================================================
+# IICA Plataforma
+# Setup
+# =========================================================
+
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+cd "$SCRIPT_DIR"
+
+
+COMPOSE="docker compose"
+
+
+echo ""
 echo "========================================="
 echo " IICA Plataforma - Setup"
 echo "========================================="
+echo ""
 
-# -------------------------
+
+# =========================================================
 # INPUTS
-# -------------------------
-read -p "¿Modo producción? (s/n): " mode
-read -p "Ingresa tu dominio (vacío = localhost): " domain
-read -p "Ingresa tu correo electrónico para SSL: " email
-read -s -p "Ingresa la contraseña del superusuario Django: " password
-echo
+# =========================================================
 
-# -------------------------
-# MODE
-# -------------------------
-if [[ "$mode" =~ ^[sS]$ ]]; then
+read -rp "¿Modo producción? (s/n): " MODE_INPUT
+
+
+if [[ "$MODE_INPUT" =~ ^[sS]$ ]]; then
+
     MODE="production"
-    DEBUG=False
 
-    if [[ -z "$domain" ]]; then
-        echo "❌ En producción el dominio es obligatorio"
+    DEBUG="False"
+
+    read -rp "Dominio: " DOMAIN
+
+    read -rp "Correo para Let's Encrypt: " EMAIL
+
+    if [[ -z "$DOMAIN" ]]; then
+        echo "ERROR: el dominio es obligatorio."
         exit 1
     fi
 
-    DOMAIN="$domain"
-    ALLOWED_HOSTS="['$DOMAIN', 'www.$DOMAIN']"
-    CSRF_TRUSTED_ORIGINS="['https://$DOMAIN', 'https://www.$DOMAIN']"
+    if [[ -z "$EMAIL" ]]; then
+        echo "ERROR: el correo es obligatorio."
+        exit 1
+    fi
 
 else
+
     MODE="development"
-    DEBUG=True
+
+    DEBUG="True"
+
     DOMAIN="localhost"
-    ALLOWED_HOSTS="['*']"
-    CSRF_TRUSTED_ORIGINS="['http://localhost']"
+
+    EMAIL="admin@localhost"
+
 fi
 
-EMAIL=${email:-admin@localhost}
-PASSWORD="$password"
 
-if [[ -z "$password" ]]; then
-    echo "❌ La contraseña no puede estar vacía"
+# =========================================================
+# SUPERUSER
+# =========================================================
+
+read -rsp "Contraseña del superusuario Django: " SUPERUSER_PASSWORD
+
+echo ""
+
+
+if [[ -z "$SUPERUSER_PASSWORD" ]]; then
+
+    echo "ERROR: la contraseña no puede estar vacía."
+
     exit 1
+
 fi
 
-# -------------------------
-# GENERAR SECRETOS
-# -------------------------
-echo "Generando secretos seguros..."
-SECRET_KEY=$(openssl rand -base64 64 | tr -dc 'A-Za-z0-9' | head -c 48)
-DB_PASSWORD=$(openssl rand -base64 64 | tr -dc 'A-Za-z0-9' | head -c 32)
 
-# -------------------------
-# .ENV
-# -------------------------
-echo "Generando archivo .env..."
+# =========================================================
+# ENVIRONMENT
+# =========================================================
 
-cat > .env <<EOF
+ENV_FILE="$SCRIPT_DIR/.env"
+
+
+if [[ -f "$ENV_FILE" ]]; then
+
+    echo ""
+    echo ">>> Existe .env; conservando secretos existentes."
+
+    set -a
+
+    source "$ENV_FILE"
+
+    set +a
+
+fi
+
+
+SECRET_KEY="${SECRET_KEY:-}"
+
+DB_PASSWORD="${DB_PASSWORD:-}"
+
+
+if [[ -z "$SECRET_KEY" ]]; then
+
+    SECRET_KEY="$(openssl rand -hex 32)"
+
+fi
+
+
+if [[ -z "$DB_PASSWORD" ]]; then
+
+    DB_PASSWORD="$(openssl rand -hex 32)"
+
+fi
+
+
+cat > "$ENV_FILE" <<EOF
 MODE=$MODE
+DEBUG=$DEBUG
+
 DOMAIN=$DOMAIN
 EMAIL=$EMAIL
-PASSWORD=$PASSWORD=
-DB_PASSWORD=$DB_PASSWORD
+
 SECRET_KEY=$SECRET_KEY
+DB_PASSWORD=$DB_PASSWORD
 
-USE_MICROSOFT_AUTH=False
-MICROSOFT_CLIENT_ID=
-MICROSOFT_CLIENT_SECRET=
+USE_MICROSOFT_AUTH=${USE_MICROSOFT_AUTH:-False}
+
+MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
+MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
+MICROSOFT_TENANT_ID=${MICROSOFT_TENANT_ID:-}
 EOF
 
-echo "Modo: $MODE"
-echo "Dominio: $DOMAIN"
 
-# -------------------------
-# CONTEXT PROCESSOR
-# -------------------------
-echo "Creando context processor..."
-
-mkdir -p iica_plataforma/iica_plataforma
-
-cat > iica_plataforma/iica_plataforma/context_processors.py <<EOF
-def microsoft_flag(request):
-    from django.conf import settings
-    return {
-        'USE_MICROSOFT_AUTH': getattr(settings, 'USE_MICROSOFT_AUTH', False)
-    }
-EOF
-
-# -------------------------
-# DJANGO SETTINGS
-# -------------------------
-echo "Generando settings.py..."
-
-cat > iica_plataforma/iica_plataforma/settings.py <<EOL
-from celery.schedules import crontab
-from pathlib import Path
-import os
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-DEBUG = $DEBUG
-
-ALLOWED_HOSTS = $ALLOWED_HOSTS
-CSRF_TRUSTED_ORIGINS = $CSRF_TRUSTED_ORIGINS
-
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-
-ROOT_URLCONF = 'iica_plataforma.urls'
-
-WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
-ASGI_APPLICATION = 'iica_plataforma.asgi.application'
-
-USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH", "False").lower() == "true"
+chmod 600 "$ENV_FILE"
 
 
+# =========================================================
+# DIRECTORIES
+# =========================================================
 
-CELERY_BEAT_SCHEDULE = {
-    'actualizar-noticias-diarias-8am': {
-        'task': 'website_management.tasks.actualizar_noticias',
-        'schedule': crontab(hour=8, minute=0),  # Todos los días a las 08:00 AM
-    },
-}
-
-INSTALLED_APPS = [
-    'daphne',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.humanize',
-    'django.contrib.sites',
-    'django.contrib.staticfiles',
-    'channels',
-    'django_celery_results',
-    'django_celery_beat',
-    'iica_coworking',
-    'secap',
-    'website_management',
-    'sig_management',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.microsoft',
-]
+mkdir -p \
+    "$SCRIPT_DIR/letsencrypt/www" \
+    "$SCRIPT_DIR/letsencrypt/conf/live"
 
 
-SITE_ID = 1
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-]
-
-if USE_MICROSOFT_AUTH:
-    AUTHENTICATION_BACKENDS.append(
-        'allauth.account.auth_backends.AuthenticationBackend'
-    )
+chmod 755 \
+    "$SCRIPT_DIR/letsencrypt" \
+    "$SCRIPT_DIR/letsencrypt/www" \
+    "$SCRIPT_DIR/letsencrypt/conf"
 
 
-if USE_MICROSOFT_AUTH:
-    SOCIALACCOUNT_ADAPTER = "website_management.adapters.MicrosoftSocialAdapter"
-    SOCIALACCOUNT_PROVIDERS = {
-    "microsoft": {
-        "TENANT": os.getenv("MICROSOFT_TENANT_ID"),
-        "SCOPE": [
-            "openid",
-            "email",
-            "profile",
-            "User.Read",
-            "Calendars.ReadWrite",
-            "offline_access",
-        ],
-        "AUTH_PARAMS": {
-            "prompt": "select_account"
-        },
-        "APP": {
-            "client_id": os.getenv("MICROSOFT_CLIENT_ID"),
-            "secret": os.getenv("MICROSOFT_CLIENT_SECRET"),
-            "key": "",
-        },
-    }
-}
+# =========================================================
+# NGINX INITIAL
+# =========================================================
 
-LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/"
+echo ""
+echo ">>> Generando Nginx inicial..."
 
-TEMPLATES = [{
-    'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [BASE_DIR / "templates"],  
-    'APP_DIRS': True,
-    'OPTIONS': {
-        'context_processors': [
-            'django.template.context_processors.debug',
-            'django.template.context_processors.request',
-            'django.contrib.auth.context_processors.auth',
-            'django.contrib.messages.context_processors.messages',
-            'iica_plataforma.context_processors.microsoft_flag',
-        ],
-    },
-}]
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'iica_plataforma_db',
-        'USER': 'postgres',
-        'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': 'db_vm',
-        'PORT': '5432',
-    }
-}
+python3 scripts/generate_nginx_conf.py \
+    "$MODE" \
+    "$DOMAIN"
 
-LANGUAGE_CODE = 'es-CR'
-TIME_ZONE = 'America/Costa_Rica'
-USE_I18N = True
-USE_TZ = True
 
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+# =========================================================
+# STOP OLD STACK
+# =========================================================
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+echo ""
+echo ">>> Deteniendo stack anterior..."
 
-CELERY_BROKER_URL = 'redis://redis_vm:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis_vm:6379/0'
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [('redis_vm', 6379)]},
-    }
-}
+$COMPOSE down --remove-orphans || true
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-EOL
 
-# -------------------------
-# NGINX
-# -------------------------
-echo "Generando configuración de Nginx..."
-python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN"
+# =========================================================
+# BUILD
+# =========================================================
 
-# -------------------------
-# DOCKER UP
-# -------------------------
-echo "Levantando contenedores..."
+echo ""
+echo ">>> Construyendo imágenes..."
 
-docker compose down
 
-if [ "$MODE" = "production" ]; then
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-else
-  docker compose --env-file .env up -d --build
-fi
+$COMPOSE build
 
-# -------------------------
-# ESPERAR DB REAL
-# -------------------------
-echo "Esperando base de datos..."
-until docker compose exec -T db_vm pg_isready -U postgres; do
-  sleep 2
+
+# =========================================================
+# START
+# =========================================================
+
+echo ""
+echo ">>> Iniciando servicios..."
+
+
+$COMPOSE up -d
+
+
+# =========================================================
+# WAIT DATABASE
+# =========================================================
+
+echo ""
+echo ">>> Esperando PostgreSQL..."
+
+
+until $COMPOSE exec -T db_vm \
+    pg_isready \
+    -U postgres \
+    -d iica_plataforma_db \
+    >/dev/null 2>&1
+do
+
+    sleep 2
+
 done
 
-echo "Esperando base de datos (PostgreSQL)..."
+
+echo ">>> PostgreSQL listo."
 
 
-echo "✅ PostgreSQL listo!"
+# =========================================================
+# MIGRATIONS
+# =========================================================
 
-# -------------------------
-# MIGRACIONES
-# -------------------------
-docker compose exec -T gunicorn_vm python manage.py makemigrations --noinput
-docker compose exec -T gunicorn_vm python manage.py migrate --noinput
+echo ""
+echo ">>> Aplicando migraciones..."
 
-# -------------------------
+
+$COMPOSE exec -T gunicorn_vm \
+    python manage.py makemigrations --noinput
+
+
+$COMPOSE exec -T gunicorn_vm \
+    python manage.py migrate --noinput
+
+
+# =========================================================
 # STATIC
-# -------------------------
-if [ "$MODE" = "production" ]; then
-    docker compose exec -T gunicorn_vm python manage.py collectstatic --noinput
-fi
+# =========================================================
 
-# -------------------------
+$COMPOSE exec -T gunicorn_vm \
+    python manage.py collectstatic --noinput
+
+
+# =========================================================
 # SUPERUSER
-# -------------------------
-docker compose exec -T gunicorn_vm python manage.py shell <<EOF
+# =========================================================
+
+echo ""
+echo ">>> Verificando superusuario..."
+
+
+export SUPERUSER_PASSWORD
+
+
+$COMPOSE exec -T \
+    -e SUPERUSER_PASSWORD="$SUPERUSER_PASSWORD" \
+    gunicorn_vm \
+    python manage.py shell <<'PY'
+
+import os
+
 from django.contrib.auth import get_user_model
+
+
 User = get_user_model()
 
+password = os.environ["SUPERUSER_PASSWORD"]
+
+
 if not User.objects.filter(is_superuser=True).exists():
-    User.objects.create_superuser("admin", "$EMAIL", "$PASSWORD")
-    print("Superusuario creado")
+
+    User.objects.create_superuser(
+        "admin",
+        os.environ.get("EMAIL", "admin@localhost"),
+        password
+    )
+
+    print("Superusuario creado.")
+
 else:
-    print("Ya existe un superusuario")
-EOF
 
-# -------------------------
-# SSL
-# -------------------------
+    print("Ya existe un superusuario.")
+
+PY
+
+
+unset SUPERUSER_PASSWORD
+
+
+# =========================================================
+# PRODUCTION SSL
+# =========================================================
+
 if [[ "$MODE" == "production" ]]; then
-    echo "Configurando SSL..."
-    sudo ./init-letsencrypt.sh "$DOMAIN" "$EMAIL" || echo "⚠️ SSL pendiente"
 
-    python3 scripts/generate_nginx_conf.py "$MODE" "$DOMAIN" --with-ssl
-    docker compose restart nginx_vm
+    echo ""
+    echo "========================================="
+    echo " CONFIGURANDO SSL"
+    echo "========================================="
+    echo ""
+
+
+    # Nginx está actualmente en HTTP.
+    # Esto permite que Let's Encrypt pueda hacer HTTP-01.
+
+    sudo "$SCRIPT_DIR/init-letsencrypt.sh" \
+        "$DOMAIN" \
+        "$EMAIL"
+
+
+    echo ""
+    echo ">>> Generando Nginx HTTPS..."
+
+
+    python3 scripts/generate_nginx_conf.py \
+        "$MODE" \
+        "$DOMAIN" \
+        --with-ssl
+
+
+    echo ""
+    echo ">>> Validando configuración Nginx..."
+
+
+    $COMPOSE exec -T nginx_vm nginx -t
+
+
+    echo ""
+    echo ">>> Reiniciando Nginx..."
+
+
+    $COMPOSE restart nginx_vm
+
 fi
 
-# -------------------------
-# AUTO-RESTART DOCKER
-# -------------------------
-echo "Configurando auto-restart..."
-docker update --restart unless-stopped $(docker ps -q) || true
 
+# =========================================================
+# CRON
+# =========================================================
+
+echo ""
+echo ">>> Configurando actualización automática..."
+
+
+sudo "$SCRIPT_DIR/install-cron.sh"
+
+
+# =========================================================
+# FINAL
+# =========================================================
+
+echo ""
 echo "========================================="
-echo " Setup finalizado correctamente "
+echo " SETUP COMPLETADO"
 echo "========================================="
+echo ""
+
+
+if [[ "$MODE" == "production" ]]; then
+
+    echo "URL:"
+    echo "https://$DOMAIN"
+
+else
+
+    echo "URL:"
+    echo "http://localhost"
+
+fi
+
+
+echo ""

@@ -1,26 +1,31 @@
 #!/bin/bash
 
-set -e
+set -Eeuo pipefail
 
-PROJECT_DIR="/home/usuario/iica_plataforma"
 
-CRON_JOB="0 6 * * * $PROJECT_DIR/auto_update.sh >> $PROJECT_DIR/auto_update.log 2>&1"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo ">>> Configurando actualización automática diaria..."
+PROJECT_USER="$(stat -c '%U' "$SCRIPT_DIR")"
 
-CURRENT_CRONTAB=$(crontab -l 2>/dev/null || true)
 
-if echo "$CURRENT_CRONTAB" | grep -Fq "$PROJECT_DIR/auto_update.sh"; then
+CRON_FILE="/etc/cron.d/iica-plataforma"
 
-    echo ">>> El cron de actualización ya existe."
 
-else
+cat > "$CRON_FILE" <<EOF
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-    (
-        echo "$CURRENT_CRONTAB"
-        echo "$CRON_JOB"
-    ) | crontab -
+CRON_TZ=America/Costa_Rica
 
-    echo ">>> Cron configurado correctamente."
+0 3 * * * $PROJECT_USER cd $SCRIPT_DIR && $SCRIPT_DIR/auto_update.sh >> $SCRIPT_DIR/auto_update.log 2>&1
+EOF
 
-fi
+
+chmod 644 "$CRON_FILE"
+
+
+echo ""
+echo "Cron instalado:"
+echo ""
+cat "$CRON_FILE"
+echo ""

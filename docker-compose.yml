@@ -1,131 +1,230 @@
 services:
 
   db_vm:
+
     image: postgres:15
+
     restart: unless-stopped
+
     env_file:
       - .env
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
     environment:
       POSTGRES_DB: iica_plataforma_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       TZ: America/Costa_Rica
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d iica_plataforma_db"
+        ]
+
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
     volumes:
       - db_data:/var/lib/postgresql/data
+
     networks:
       - mynetwork_vm
+
 
   redis_vm:
+
     image: redis:7
+
     restart: unless-stopped
+
     env_file:
-    - .env 
+      - .env
+
     networks:
       - mynetwork_vm
 
+
   gunicorn_vm:
+
     restart: unless-stopped
+
     env_file:
-    - .env 
+      - .env
+
     environment:
-      - TZ=America/Costa_Rica
+      TZ: America/Costa_Rica
+
     build:
       context: .
       dockerfile: Dockerfile.gunicorn
       args:
         MODE: ${MODE:-development}
+
     volumes:
       - ./iica_plataforma:/app
       - ./scripts:/app/scripts
+
     expose:
       - "8765"
+
     depends_on:
-      - db_vm
-      - redis_vm
+      db_vm:
+        condition: service_healthy
+
+      redis_vm:
+        condition: service_started
+
     networks:
       - mynetwork_vm
 
+
   daphne_vm:
+
     restart: unless-stopped
+
     env_file:
-    - .env 
+      - .env
+
     environment:
-      - TZ=America/Costa_Rica
+      TZ: America/Costa_Rica
+
     build:
       context: .
       dockerfile: Dockerfile.daphne
       args:
         MODE: ${MODE:-development}
+
     volumes:
       - ./iica_plataforma:/app
+
     expose:
       - "8089"
+
+    depends_on:
+      db_vm:
+        condition: service_healthy
+
+      redis_vm:
+        condition: service_started
+
     networks:
       - mynetwork_vm
 
+
   celery_vm:
+
     restart: unless-stopped
+
     env_file:
-    - .env 
+      - .env
+
     environment:
-      - TZ=America/Costa_Rica
+      TZ: America/Costa_Rica
+
     build:
       context: .
       dockerfile: Dockerfile.celery
       args:
         MODE: ${MODE:-development}
+
     volumes:
       - ./iica_plataforma:/app
+
+    depends_on:
+      db_vm:
+        condition: service_healthy
+
+      redis_vm:
+        condition: service_started
+
     networks:
       - mynetwork_vm
 
-  nginx_vm:
-    image: nginx:1.25
-    env_file:
-    - .env 
+
+  celery_beat_vm:
+
     restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      TZ: America/Costa_Rica
+
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+      args:
+        MODE: ${MODE:-development}
+
+    volumes:
+      - ./iica_plataforma:/app
+
+    command:
+      celery
+      -A
+      iica_plataforma
+      beat
+      -l
+      info
+      --scheduler
+      django_celery_beat.schedulers:DatabaseScheduler
+
+    depends_on:
+      db_vm:
+        condition: service_healthy
+
+      redis_vm:
+        condition: service_started
+
+    networks:
+      - mynetwork_vm
+
+
+  nginx_vm:
+
+    image: nginx:1.25
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
     ports:
       - "80:80"
       - "443:443"
+
     volumes:
+
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
       - ./letsencrypt/conf:/etc/letsencrypt
+
       - ./letsencrypt/www:/var/www/certbot
+
       - ./iica_plataforma:/app
+
     depends_on:
-      - gunicorn_vm
-      - daphne_vm
+
+      gunicorn_vm:
+        condition: service_started
+
+      daphne_vm:
+        condition: service_started
+
     networks:
       - mynetwork_vm
 
-  celery_beat_vm:
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      - TZ=America/Costa_Rica
-    build:
-      context: .
-      dockerfile: Dockerfile.celery
-      args:
-        MODE: ${MODE:-development}
-    volumes:
-      - ./iica_plataforma:/app
-    networks:
-      - mynetwork_vm
-    depends_on:
-      - db_vm
-      - redis_vm
-    command: celery -A iica_plataforma beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
 networks:
+
   mynetwork_vm:
     driver: bridge
 
+
 volumes:
+
   db_data:

@@ -19,8 +19,8 @@ venv/
 # Variables sensibles
 # ======================
 .env
+*.env
 local_settings.py
-iica_plataforma/iica_plataforma/settings.py
 
 # ======================
 # Media y static (generados)
@@ -44,6 +44,11 @@ letsencrypt/
 nginx.conf
 
 # ======================
+# Backups
+# ======================
+backups/
+
+# ======================
 # Docs generados
 # ======================
 iica_plataforma/docs/
@@ -53,6 +58,3 @@ iica_plataforma/docs/
 # ======================
 .DS_Store
 Thumbs.db
-
-.env
-*.env

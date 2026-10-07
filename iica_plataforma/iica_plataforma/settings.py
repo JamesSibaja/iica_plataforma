@@ -2,158 +2,297 @@ from celery.schedules import crontab
 from pathlib import Path
 import os
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+# =========================================================
+# ENVIRONMENT
+# =========================================================
+
 SECRET_KEY = os.getenv("SECRET_KEY")
-DEBUG = True
 
-ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['http://localhost']
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY no está configurada")
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+DOMAIN = os.getenv("DOMAIN", "localhost").strip()
+
+
+# =========================================================
+# HOSTS
+# =========================================================
+
+if DEBUG:
+    ALLOWED_HOSTS = [
+        "localhost",
+        "127.0.0.1",
+    ]
+
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost",
+        "http://127.0.0.1",
+    ]
+
+else:
+    ALLOWED_HOSTS = [
+        DOMAIN,
+        f"www.{DOMAIN}",
+    ]
+
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{DOMAIN}",
+        f"https://www.{DOMAIN}",
+    ]
+
+
+# =========================================================
+# SECURITY / PROXY
+# =========================================================
+
+SECURE_PROXY_SSL_HEADER = (
+    "HTTP_X_FORWARDED_PROTO",
+    "https",
+)
 
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
-ROOT_URLCONF = 'iica_plataforma.urls'
 
-WSGI_APPLICATION = 'iica_plataforma.wsgi.application'
-ASGI_APPLICATION = 'iica_plataforma.asgi.application'
+# =========================================================
+# DJANGO
+# =========================================================
 
-USE_MICROSOFT_AUTH = os.getenv("USE_MICROSOFT_AUTH", "False").lower() == "true"
+ROOT_URLCONF = "iica_plataforma.urls"
+
+WSGI_APPLICATION = "iica_plataforma.wsgi.application"
+ASGI_APPLICATION = "iica_plataforma.asgi.application"
 
 
+# =========================================================
+# MICROSOFT AUTH
+# =========================================================
+
+USE_MICROSOFT_AUTH = (
+    os.getenv("USE_MICROSOFT_AUTH", "False").lower() == "true"
+)
+
+
+# =========================================================
+# CELERY
+# =========================================================
 
 CELERY_BEAT_SCHEDULE = {
-    'actualizar-noticias-diarias-8am': {
-        'task': 'website_management.tasks.actualizar_noticias',
-        'schedule': crontab(hour=8, minute=0),  # Todos los días a las 08:00 AM
+    "actualizar-noticias-diarias-8am": {
+        "task": "website_management.tasks.actualizar_noticias",
+        "schedule": crontab(
+            hour=8,
+            minute=0,
+        ),
     },
 }
 
+
+# =========================================================
+# INSTALLED APPS
+# =========================================================
+
 INSTALLED_APPS = [
-    'daphne',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.humanize',
-    'django.contrib.sites',
-    'django.contrib.staticfiles',
-    'channels',
-    'django_celery_results',
-    'django_celery_beat',
-    'iica_coworking',
-    'secap',
-    'website_management',
-    'sig_management',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.microsoft',
+    "daphne",
+
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.humanize",
+    "django.contrib.sites",
+    "django.contrib.staticfiles",
+
+    "channels",
+
+    "django_celery_results",
+    "django_celery_beat",
+
+    "iica_coworking",
+    "secap",
+    "website_management",
+    "sig_management",
+
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.microsoft",
 ]
-
-
 
 
 SITE_ID = 1
 
+
+# =========================================================
+# MIDDLEWARE
+# =========================================================
+
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+
+# =========================================================
+# AUTHENTICATION
+# =========================================================
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
+
 if USE_MICROSOFT_AUTH:
+
     AUTHENTICATION_BACKENDS.append(
-        'allauth.account.auth_backends.AuthenticationBackend'
+        "allauth.account.auth_backends.AuthenticationBackend"
     )
 
+    SOCIALACCOUNT_ADAPTER = (
+        "website_management.adapters.MicrosoftSocialAdapter"
+    )
 
-
-if USE_MICROSOFT_AUTH:
-    SOCIALACCOUNT_ADAPTER = "website_management.adapters.MicrosoftSocialAdapter"
     SOCIALACCOUNT_PROVIDERS = {
-    "microsoft": {
-        "TENANT": os.getenv("MICROSOFT_TENANT_ID"),
-        "SCOPE": [
-            "openid",
-            "email",
-            "profile",
-            "User.Read",
-            "Calendars.ReadWrite",
-            "offline_access",
-        ],
-        "AUTH_PARAMS": {
-            "prompt": "select_account"
-        },
-        "APP": {
-            "client_id": os.getenv("MICROSOFT_CLIENT_ID"),
-            "secret": os.getenv("MICROSOFT_CLIENT_SECRET"),
-            "key": "",
-        },
+        "microsoft": {
+            "TENANT": os.getenv("MICROSOFT_TENANT_ID"),
+
+            "SCOPE": [
+                "openid",
+                "email",
+                "profile",
+                "User.Read",
+                "Calendars.ReadWrite",
+                "offline_access",
+            ],
+
+            "AUTH_PARAMS": {
+                "prompt": "select_account",
+            },
+
+            "APP": {
+                "client_id": os.getenv("MICROSOFT_CLIENT_ID"),
+                "secret": os.getenv("MICROSOFT_CLIENT_SECRET"),
+                "key": "",
+            },
+        }
     }
-}
+
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
-TEMPLATES = [{
-    'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [BASE_DIR / "templates"],  
-    'APP_DIRS': True,
-    'OPTIONS': {
-        'context_processors': [
-            'django.template.context_processors.debug',
-            'django.template.context_processors.request',
-            'django.contrib.auth.context_processors.auth',
-            'django.contrib.messages.context_processors.messages',
-            'iica_plataforma.context_processors.microsoft_flag',
-        ],
-    },
-}]
+
+# =========================================================
+# TEMPLATES
+# =========================================================
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "iica_plataforma.context_processors.microsoft_flag",
+            ],
+        },
+    }
+]
+
+
+# =========================================================
+# DATABASE
+# =========================================================
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'iica_plataforma_db',
-        'USER': 'postgres',
-        'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': 'db_vm',
-        'PORT': '5432',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "iica_plataforma_db",
+        "USER": "postgres",
+        "PASSWORD": os.getenv("DB_PASSWORD"),
+        "HOST": "db_vm",
+        "PORT": "5432",
     }
 }
 
-LANGUAGE_CODE = 'es-CR'
-TIME_ZONE = 'America/Costa_Rica'
+
+# =========================================================
+# LANGUAGE / TIME
+# =========================================================
+
+LANGUAGE_CODE = "es-CR"
+
+TIME_ZONE = "America/Costa_Rica"
+
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# =========================================================
+# STATIC / MEDIA
+# =========================================================
 
-CELERY_BROKER_URL = 'redis://redis_vm:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis_vm:6379/0'
+STATIC_URL = "/static/"
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static"
+]
+
+
+MEDIA_URL = "/media/"
+
+MEDIA_ROOT = BASE_DIR / "media"
+
+
+# =========================================================
+# REDIS / CELERY
+# =========================================================
+
+CELERY_BROKER_URL = "redis://redis_vm:6379/0"
+
+CELERY_RESULT_BACKEND = "redis://redis_vm:6379/0"
+
+
+# =========================================================
+# CHANNELS
+# =========================================================
 
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [('redis_vm', 6379)]},
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+
+        "CONFIG": {
+            "hosts": [
+                ("redis_vm", 6379)
+            ]
+        },
     }
 }
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# =========================================================
+# DEFAULT PK
+# =========================================================
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
