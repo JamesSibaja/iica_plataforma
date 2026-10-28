@@ -17,7 +17,7 @@ from .models import (
 
 @admin.register(DocuSealSettings)
 class DocuSealSettingsAdmin(admin.ModelAdmin):
-    list_display = ('api_url', 'is_active', 'updated_at')
+    list_display = ('api_url', 'admin_email', 'is_active', 'updated_at')
     
     def has_add_permission(self, request):
         if self.model.objects.exists():

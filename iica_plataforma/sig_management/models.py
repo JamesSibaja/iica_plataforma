@@ -11,6 +11,7 @@ class DocuSealSettings(models.Model):
     """Configuración global para DocuSeal administrable desde Django Admin."""
     api_key = models.CharField(max_length=255, blank=True, null=True, help_text="API Key de DocuSeal (Opcional para modo libre)")
     api_url = models.CharField(max_length=255, default="https://api.docuseal.com", help_text="URL base de la API de DocuSeal")
+    admin_email = models.EmailField(blank=True,help_text="Correo del administrador de DocuSeal propietario de la API Key.")
     is_active = models.BooleanField(default=True, help_text="Habilitar integración con DocuSeal")
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -750,39 +750,89 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .models import DocuSealSettings
 
-
 @login_required
 def probar_docuseal_builder(request):
-    ds = DocuSealSettings.get_settings()
+    """
+    Prueba controlada del editor visual de DocuSeal.
 
-    if not ds.is_active or not ds.api_key:
-        raise ImproperlyConfigured(
-            "DocuSeal no está activo o no tiene API Key configurada."
+    Solo permite el acceso a administradores de Django.
+    El JWT se genera en el backend y nunca se envía la API Key
+    al navegador.
+    """
+
+    # Solo administradores pueden abrir la prueba del editor.
+    if not request.user.is_staff:
+        return HttpResponse(
+            "No tienes permisos para acceder al editor de prueba.",
+            status=403,
         )
 
-    # IMPORTANTE:
-    # Sustituye este valor por el correo del administrador
-    # de DocuSeal propietario de la API Key.
-    docuseal_admin_email = "CORREO_ADMIN_DOCUSEAL"
+    ds = DocuSealSettings.get_settings()
+
+    # Validar la configuración de DocuSeal.
+    if not ds.is_active:
+        return HttpResponse(
+            "La integración con DocuSeal está desactivada en Django Admin.",
+            status=400,
+        )
+
+    api_key = (ds.api_key or "").strip()
+    admin_email = (ds.admin_email or "").strip()
+    integration_email = (request.user.email or "").strip()
+
+    if not api_key:
+        return HttpResponse(
+            "Falta configurar la API Key de DocuSeal en Django Admin.",
+            status=400,
+        )
+
+    if not admin_email:
+        return HttpResponse(
+            "Falta configurar el correo administrador de DocuSeal.",
+            status=400,
+        )
+
+    if not integration_email:
+        return HttpResponse(
+            "Tu usuario de Django no tiene un correo electrónico configurado.",
+            status=400,
+        )
+
+    # Documento público de ejemplo, utilizado exclusivamente para la prueba.
+    document_url = "https://www.irs.gov/pub/irs-pdf/fw9.pdf"
+
+    timestamp = int(timezone.now().timestamp())
 
     payload = {
-        "user_email": docuseal_admin_email,
-        "integration_email": request.user.email,
-        "name": "Prueba de firma - Demo",
-        "external_id": f"demo-firma-{request.user.pk}",
-        "document_urls": [
-            "https://www.irs.gov/pub/irs-pdf/fw9.pdf"
-        ],
+        "user_email": admin_email,
+        "integration_email": integration_email,
+        "name": f"PRUEBA GET DocuSeal {timestamp}",
+        "external_id": (
+            f"get-docuseal-demo-{request.user.pk}-{timestamp}"
+        ),
+        "document_urls": [document_url],
     }
 
-    token = jwt.encode(
-        payload,
-        ds.api_key.strip(),
-        algorithm="HS256",
-    )
+    try:
+        builder_token = jwt.encode(
+            payload,
+            api_key,
+            algorithm="HS256",
+        )
+    except Exception:
+        logger.exception(
+            "[DocuSeal] Error al generar el token del editor."
+        )
+        return HttpResponse(
+            "No se pudo preparar el editor de DocuSeal. "
+            "Revisa los registros del servidor.",
+            status=500,
+        )
 
     return render(
         request,
         "sig_management/docuseal_builder_demo.html",
-        {"builder_token": token},
+        {
+            "builder_token": builder_token,
+        },
     )
