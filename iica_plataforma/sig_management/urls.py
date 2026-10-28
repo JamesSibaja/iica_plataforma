@@ -11,4 +11,5 @@ urlpatterns = [
     path('flujos/<int:execution_id>/romper/', views.romper_flujo_ad_hoc, name='romper_flujo_ad_hoc'),
     path('documento/descargar/<int:doc_id>/', views.descargar_documento_generado, name='descargar_documento_generado'),
     path('workflows/extraer-etiquetas-ajax/', views.extraer_etiquetas_ajax, name='extraer_etiquetas_ajax'),
+    path("docuseal-builder-demo/",views.probar_docuseal_builder,name="docuseal_builder_demo"),
 ]

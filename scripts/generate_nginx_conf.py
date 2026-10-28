@@ -86,6 +86,13 @@ http {{
         ssl_prefer_server_ciphers on;
 
 
+        location /.well-known/acme-challenge/ {{
+
+            root /var/www/certbot;
+
+        }}
+
+
         location / {{
 
             proxy_pass http://django_app;

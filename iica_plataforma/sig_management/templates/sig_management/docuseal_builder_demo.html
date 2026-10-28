@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Prueba del editor de DocuSeal</title>
+
+    <script src="https://cdn.docuseal.com/js/builder.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        .instrucciones {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f3f5f7;
+            border-radius: 6px;
+        }
+
+        docuseal-builder {
+            display: block;
+            min-height: 700px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Preparar documento para firma</h1>
+
+    <div class="instrucciones">
+        <p>
+            Esta es una prueba del editor de DocuSeal.
+            Puedes preparar el documento y colocar los campos
+            de firma disponibles.
+        </p>
+    </div>
+
+    <docuseal-builder
+        data-token="{{ builder_token }}"
+        data-language="es">
+    </docuseal-builder>
+</body>
+</html>

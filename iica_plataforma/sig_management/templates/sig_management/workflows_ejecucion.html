@@ -236,6 +236,129 @@
                             <span class="badge bg-secondary-2">Estado: {{ execution_sel.get_status_display }}</span>
                         </div>
 
+                        <!-- WIDGET DE FIRMA DIGITAL DOCUSEAL INCRUSTADO -->
+                        <!-- INTEGRACIÓN DOCUSEAL -->
+                        {% if execution_sel.docuseal_embed_slug and not execution_sel.signature_completed %}
+
+                        <div class="card p-3 border-primary shadow-sm mb-3 bg-light">
+
+                            <h6 class="fw-bold text-primary">
+                                <i class="bi bi-pen-fill me-1"></i>
+                                Firma digital requerida
+                            </h6>
+
+                            <p class="small text-muted mb-3">
+                                Complete la firma electrónica para continuar con el trámite.
+                            </p>
+
+                            <div id="docuseal-container"
+                                class="bg-white rounded border p-2"
+                                style="min-height: 450px;">
+
+                                <div id="docuseal-loading" class="text-center py-5">
+                                    <div class="spinner-border text-primary"
+                                        role="status"
+                                        aria-label="Cargando formulario">
+                                    </div>
+
+                                    <p class="text-muted small mt-3">
+                                        Cargando formulario de firma...
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <div id="docuseal-error"
+                                class="alert alert-danger mt-3 d-none"
+                                role="alert">
+                                No fue posible cargar el formulario de firma.
+                                Recargue la página o contacte al administrador.
+                            </div>
+                            
+                        </div>
+                        {{ execution_sel.docuseal_embed_slug|json_script:"docuseal-embed-value" }}
+                        <script src="https://cdn.docuseal.com/js/form.js"></script>
+
+                        <script>
+                            (function () {
+                                "use strict";
+                            
+                                const container = document.getElementById("docuseal-container");
+                                const loading = document.getElementById("docuseal-loading");
+                                const errorBox = document.getElementById("docuseal-error");
+                            
+                                if (!container) {
+                                    console.error("[DocuSeal] No existe el contenedor del formulario.");
+                                    return;
+                                }
+                            
+                                if (container.dataset.initialized === "true") {
+                                    return;
+                                }
+                            
+                                container.dataset.initialized = "true";
+                            
+                                function mostrarError(error) {
+                                    console.error("[DocuSeal] Error al cargar el formulario:", error);
+                            
+                                    if (loading) {
+                                        loading.classList.add("d-none");
+                                    }
+                            
+                                    if (errorBox) {
+                                        errorBox.classList.remove("d-none");
+                                    }
+                                }
+                            
+                                try {
+                                    const form = document.createElement("docuseal-form");
+                            
+                                    // Obtener la URL almacenada por Django.
+                                    const embedElement = document.getElementById("docuseal-embed-value");
+                            
+                                    const embedUrl = embedElement
+                                        ? JSON.parse(embedElement.textContent)
+                                        : null;
+                            
+                                    if (!embedUrl) {
+                                        mostrarError("No se ha configurado la URL de firma.");
+                                        return;
+                                    }
+                            
+                                    // Configurar el formulario de DocuSeal.
+                                    form.setAttribute("data-src", embedUrl);
+                            
+                                    container.appendChild(form);
+                            
+                                    if (loading) {
+                                        loading.classList.add("d-none");
+                                    }
+                            
+                                    form.addEventListener("completed", function (event) {
+                                        console.info(
+                                            "[DocuSeal] El componente notificó que la firma terminó.",
+                                            event.detail
+                                        );
+                            
+                                        window.location.reload();
+                                    });
+                            
+                                } catch (error) {
+                                    mostrarError(error);
+                                }
+                            
+                            })();
+                            </script>
+
+                        {% elif execution_sel.signature_completed %}
+
+                        <div class="alert alert-success mb-3">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            <strong>Firma completada.</strong>
+                            El sistema registra la firma como finalizada.
+                        </div>
+
+                        {% endif %}
                         
                         <!-- DESCRIPCIÓN E INSTRUCCIONES DE LA ETAPA ACTUAL -->
                         {% if execution_sel.current_stage_execution %}
@@ -624,7 +747,8 @@
 
                                 <!-- OPCIONES AVANZADAS DE ETAPA -->
                                 <div class="col-12 mt-2">
-                                    <div class="form-check">
+                                    
+                                    <div class="form-check mt-1">
                                         <input class="form-check-input stage-dynamic-checkbox" type="checkbox" name="stage_dynamic_1" id="dynamic_1" onchange="toggleParticipantesDinamicos(this, 1)">
                                         <label class="form-check-label small fw-bold text-danger" for="dynamic_1">
                                             Participante Dinámico / Indefinido (Se seleccionará al iniciar el trámite)
@@ -672,20 +796,32 @@
                     <hr>
 
                     <!-- DOCUMENTOS WORD -->
+                    <!-- DOCUMENTOS WORD -->
                     <h5 class="fw-bold text-primary">2. Documentos Word (.docx) y sus Etiquetas</h5>
                     <p class="text-muted small">Sube los documentos. Sus etiquetas <code>{{etiqueta}}</code> generarán preguntas automáticas que podrás asignar a la etapa de tu preferencia.</p>
 
                     <div id="documentos-container">
                         <div class="card p-3 mb-3 border bg-light document-row">
                             <div class="row g-2 align-items-center mb-2">
-                                <div class="col-md-6">
+                                <div class="col-md-5">
                                     <label class="form-label small fw-bold">Archivo Word (.docx)</label>
                                     <input type="file" name="doc_file[]" class="form-control form-control-sm doc-file-input" accept=".docx" onchange="procesarDocumentoWord(this)" required>
                                 </div>
-                                <div class="col-md-5">
+                                <div class="col-md-4">
                                     <label class="form-label small fw-bold">Nombre Descriptivo</label>
                                     <input type="text" name="doc_name[]" class="form-control form-control-sm" placeholder="Ej: Contrato Oficial" required>
                                 </div>
+
+
+                                <div class="col-md-2 text-end mt-4">
+                                    <div class="form-check text-start">
+                                        <input class="form-check-input" type="checkbox" name="doc_requires_signature_0" id="doc_sig_0" onchange="procesarDocumentoWord(this.closest('.document-row').querySelector('.doc-file-input'))">
+                                        <label class="form-check-label small fw-bold text-primary" for="doc_sig_0">
+                                            🔒 Requiere Firma
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <div class="col-md-1 text-end mt-4">
                                     <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.document-row').remove()">×</button>
                                 </div>
@@ -700,7 +836,6 @@
                         </div>
                     </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="agregarDocumento()">+ Subir otro documento Word</button>
-
                     <hr>
 
                     <!-- PREGUNTAS MANUALES -->
@@ -850,7 +985,8 @@
                     </select>
                 </div>
                 <div class="col-12 mt-2">
-                    <div class="form-check">
+                    
+                    <div class="form-check mt-1">
                         <input class="form-check-input stage-dynamic-checkbox" type="checkbox" name="stage_dynamic_${totalEtapas}" id="dynamic_${totalEtapas}" onchange="toggleParticipantesDinamicos(this, ${totalEtapas})">
                         <label class="form-check-label small fw-bold text-danger" for="dynamic_${totalEtapas}">
                             Participante Dinámico / Indefinido (Se seleccionará al iniciar el trámite)
@@ -914,18 +1050,27 @@
     
     function agregarDocumento() {
         const container = document.getElementById('documentos-container');
+        const index = container.querySelectorAll('.document-row').length;
         const div = document.createElement('div');
         div.className = 'card p-3 mb-3 border bg-light document-row';
         
         div.innerHTML = `
             <div class="row g-2 align-items-center">
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <label class="form-label small fw-bold">Archivo Word (.docx)</label>
                     <input type="file" name="doc_file[]" class="form-control form-control-sm doc-file-input" accept=".docx" onchange="procesarDocumentoWord(this)" required>
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <label class="form-label small fw-bold">Nombre Descriptivo</label>
                     <input type="text" name="doc_name[]" class="form-control form-control-sm" placeholder="Ej: Anexo Adicional" required>
+                </div>
+                <div class="col-md-2 text-end mt-4">
+                    <div class="form-check text-start">
+                        <input class="form-check-input" type="checkbox" name="doc_requires_signature_${index}" id="doc_sig_${index}">
+                        <label class="form-check-label small fw-bold text-primary" for="doc_sig_${index}">
+                            🔒 Requiere Firma
+                        </label>
+                    </div>
                 </div>
                 <div class="col-md-1 text-end mt-4">
                     <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.document-row').remove()">×</button>
@@ -1066,61 +1211,94 @@
     }
     
     function procesarDocumentoWord(input) {
-        if (!input.files || !input.files[0]) return;
-        
-        const documentRow = input.closest('.document-row');
-        const container = documentRow.querySelector('.mapeo-etiquetas-container');
-        const formData = new FormData();
-        formData.append('doc_file', input.files[0]);
-        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    if (!input || !input.files || !input.files[0]) return;
     
-        fetch("{% url 'extraer_etiquetas_ajax' %}", {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrftoken },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            container.innerHTML = '';
-            if (!data.etiquetas || data.etiquetas.length === 0) {
-                container.innerHTML = '<p class="text-danger small mb-0">No se encontraron etiquetas <code>{{etiqueta}}</code> en este documento.</p>';
-                return;
-            }
-    
-            let opcionesEtapas = '';
-            const stageCards = document.querySelectorAll('.stage-card');
+    const documentRow = input.closest('.document-row');
+    const container = documentRow.querySelector('.mapeo-etiquetas-container');
+    const checkboxFirma = documentRow.querySelector('input[type="checkbox"][name^="doc_requires_signature"]');
+    const formData = new FormData();
+    formData.append('doc_file', input.files[0]);
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch("{% url 'extraer_etiquetas_ajax' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        container.innerHTML = '';
+        const etiquetas = data.etiquetas || [];
+
+        let opcionesEtapas = '';
+        const stageCards = document.querySelectorAll('.stage-card');
+        const numTotalEtapas = stageCards.length;
+
+        stageCards.forEach((card, index) => {
+            let num = index + 1;
+            let nombreInput = card.querySelector('.stage-name-input');
+            let nombre = nombreInput ? nombreInput.value.trim() || `Etapa ${num}` : `Etapa ${num}`;
+            opcionesEtapas += `<option value="${num}">Etapa ${num}: ${nombre}</option>`;
+        });
+
+        // Renderizar etiquetas comunes extraídas
+        etiquetas.forEach((tag) => {
+            const row = document.createElement('div');
+            row.className = 'row g-2 mb-2 align-items-center';
+            row.innerHTML = `
+                <div class="col-md-3">
+                    <input type="hidden" name="map_key[]" value="${tag}">
+                    <span class="badge bg-secondary font-monospace"><code>&#123;&#123;${tag}&#125;&#125;</code></span>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="map_label[]" class="form-control form-control-sm" value="¿Cuál es el valor para ${tag}?" required>
+                </div>
+                <div class="col-md-5">
+                    <select name="map_stage_index[]" class="form-select form-select-sm" required>
+                        ${opcionesEtapas}
+                    </select>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+
+        // Si la casilla "Requiere Firma" está activada, mostrar de inmediato la pregunta de revisión y firma
+        if (checkboxFirma && checkboxFirma.checked) {
+            const rowFirma = document.createElement('div');
+            rowFirma.className = 'row g-2 mb-2 align-items-center p-2 bg-light border-start border-3 border-primary rounded mt-2';
+            
+            let opcionesEtapaFirma = '';
             stageCards.forEach((card, index) => {
                 let num = index + 1;
                 let nombreInput = card.querySelector('.stage-name-input');
                 let nombre = nombreInput ? nombreInput.value.trim() || `Etapa ${num}` : `Etapa ${num}`;
-                opcionesEtapas += `<option value="${num}">Etapa ${num}: ${nombre}</option>`;
+                let selected = (num === numTotalEtapas) ? 'selected' : '';
+                opcionesEtapaFirma += `<option value="${num}" ${selected}>Etapa ${num}: ${nombre}</option>`;
             });
-    
-            data.etiquetas.forEach((tag) => {
-                const row = document.createElement('div');
-                row.className = 'row g-2 mb-2 align-items-center';
-                row.innerHTML = `
-                    <div class="col-md-3">
-                        <input type="hidden" name="map_key[]" value="${tag}">
-                        <span class="badge bg-secondary font-monospace"><code>&#123;&#123;${tag}&#125;&#125;</code></span>
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" name="map_label[]" class="form-control form-control-sm" value="¿Cuál es el valor para ${tag}?" required>
-                    </div>
-                    <div class="col-md-5">
-                        <select name="map_stage_index[]" class="form-select form-select-sm" required>
-                            ${opcionesEtapas}
-                        </select>
-                    </div>
-                `;
-                container.appendChild(row);
-            });
-        })
-        .catch(error => {
-            console.error('Error al extraer etiquetas:', error);
-            container.innerHTML = '<p class="text-danger small mb-0">Error al procesar el archivo.</p>';
-        });
-    }
+
+            rowFirma.innerHTML = `
+                <div class="col-md-3">
+                    <input type="hidden" name="map_key[]" value="__SIGNATURE_FIELD__">
+                    <span class="badge bg-primary text-white font-monospace">🔒 FIRMA DIGITAL</span>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="map_label[]" class="form-control form-control-sm fw-bold text-primary" value="Revisar y Firmar Documento" readonly>
+                </div>
+                <div class="col-md-5">
+                    <select name="map_stage_index[]" class="form-select form-select-sm border-primary fw-bold" required>
+                        ${opcionesEtapaFirma}
+                    </select>
+                </div>
+            `;
+            container.appendChild(rowFirma);
+        }
+    })
+    .catch(error => {
+        console.error('Error al extraer etiquetas:', error);
+        container.innerHTML = '<p class="text-danger small mb-0">Error al procesar el archivo.</p>';
+    });
+}
+
 </script>
 
 {% endblock %}
