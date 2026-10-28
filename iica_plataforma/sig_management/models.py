@@ -221,3 +221,51 @@ class GeneratedDocument(models.Model):
 
     def __str__(self):
         return self.name
+    
+class DocuSealEvent(models.Model):
+    EVENT_TYPES = [
+        ("submission.created", "Solicitud creada"),
+        ("submission.completed", "Firma completada"),
+        ("submission.expired", "Solicitud expirada"),
+        ("submission.archived", "Solicitud archivada"),
+        ("form.viewed", "Formulario visualizado"),
+        ("form.started", "Firma iniciada"),
+        ("form.completed", "Formulario completado"),
+        ("form.declined", "Firma rechazada"),
+        ("api.error", "Error de integración"),
+    ]
+
+    workflow_execution = models.ForeignKey(
+        "WorkflowExecution",
+        on_delete=models.CASCADE,
+        related_name="docuseal_events",
+    )
+
+    event_type = models.CharField(
+        max_length=50,
+        choices=EVENT_TYPES,
+    )
+
+    external_event_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+    )
+
+    description = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Evento de DocuSeal"
+        verbose_name_plural = "Eventos de DocuSeal"
+
+    def __str__(self):
+        return (
+            f"Trámite #{self.workflow_execution_id} "
+            f"- {self.event_type}"
+        )
